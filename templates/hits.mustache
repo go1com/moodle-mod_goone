@@ -1,0 +1,77 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+  GO1 Activity Module.
+
+  @package    mod_goone
+  @copyright  2019, eCreators PTY LTD
+  @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+  @author     Fouad Saikali <fouad@ecreators.com.au>
+}}
+
+<h2 class="go1-result" style="display:none;">{{# str }} results, mod_goone {{/ str }}: {{ total }}</h2>
+{{#hits}}
+
+<a id="lomodal" data-toggle="modal" class="lomodal" data-target="#lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;">
+ <div class="card container my-3">
+    <div class="h100" >
+        <div class="row" style="overflow:hidden;"  style="height:160px;max-height:160px">
+            <div class="overflow-hidden col-md-3 p-0" style="background-image:url({{{image}}});background-size:cover;" >
+            </div>
+            <div class="col-md-9 p-3 bg-light" >
+                <div class="card-block">
+                  <h5 class="card-title" style="font-weight:700;"> {{ title }}</h5>
+
+                  <div class="row ml-1"> <p class="ml-0 card-title badge badge-black" style="text-transform:uppercase;">{{type}}</p>                               <p class="go1-price card-text ml-2">{{#pricing}}{{price}}{{/pricing}}</p>
+                  </div>
+                  {{#provider}}
+                  <p class="go1-provider card-text font-weight-light">{{name}}</p>
+                  {{/provider}}
+                  <p class="card-text" style="width: 100%;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"> {{ description }}</p>
+                </div>
+             </div>
+        </div>
+    </div>
+</div>
+
+</a>
+{{/hits}}
+
+<script>
+$('.lomodal').click(function(){
+    var id=$(this).data('id');
+    var name=$(this).data('name');
+    $('#loiframe').attr('src', 'modal.php'+ location.search + '&loid=' + id);
+    $('#submitlo').attr('loid',id);
+    $('#submitlo').attr('loname',name);
+})
+
+function CloseMySelf(sender) {
+    try {
+        window.opener.HandlePopupResult(sender.getAttribute("loid"),sender.getAttribute("loname"));
+    }
+    catch (err) {}
+
+    window.close();
+    return false;
+}
+var totalHits = {{ total }};
+
+$('#lomodal').on('hidden.bs.modal', function () {
+    $('#loiframe').attr('src','');
+})
+</script>

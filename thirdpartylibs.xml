@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>js/bootstrap-multiselect.js</location>
+    <name>Bootstrap Multiselect</name>
+    <version>0.9.15</version>
+    <license>Apache License</license>
+    <licenseversion>2.0</licenseversion>
+  </library>
+  <library>
+    <location>css/bootstrap-multiselect.css</location>
+    <name>Bootstrap Multiselect</name>
+    <version>0.9.15</version>
+    <license>Apache License</license>
+    <licenseversion>2.0</licenseversion>
+  </library>
+</libraries>
