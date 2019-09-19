@@ -25,18 +25,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(__DIR__.'/upgradelib.php');
-
 /**
- * Execute local_lb_filetransfer upgrade from the given old version.
+ * Execute upgrade script.
  *
  * @param int $oldversion
  * @return bool
  */
-function xmldb_mod_goone_upgrade($oldversion) {
-    global $DB;
-
-    $dbman = $DB->get_manager();
-
+function xmldb_goone_upgrade($oldversion) {
     return true;
 }
