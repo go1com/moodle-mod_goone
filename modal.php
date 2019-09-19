@@ -28,7 +28,7 @@ require_once($CFG->dirroot.'/mod/goone/lib.php');
 require_login();
 $mode = required_param('mode', PARAM_TEXT);
 $id = required_param('id', PARAM_INT);
-$loid = required_param('loid', PARAM_RAW);
+$loid = required_param('loid', PARAM_INT);
 
 goone_check_capabilities($mode, $id);
 
