@@ -477,6 +477,7 @@ function goone_set_completion($cm, $userid, $location, $type) {
 
 /**
  * gets scorm_12.js file form mod_scorm, modifies the datamodelurl variable, stores in cache and Retrieves it.
+ * checks against current scorm version if cache needs to be rebuilt
  *
  * @return object
  */
@@ -484,15 +485,15 @@ function goone_inject_datamodel() {
     global $CFG;
 
     $cache = cache::make('mod_goone', 'scorm12datamodel');
+    $scormversion = core_plugin_manager::instance()->get_plugin_info('mod_scorm')->versiondisk;
 
-    if ($data = $cache->get('scorm12js')) {
+    if ($data = $cache->get($scormversion)) {
         return $data;
     }
         $data = file($CFG->dirroot.'/mod/scorm/datamodels/scorm_12.js');
-        $data = "<script type=\"text/javascript\">".
-            implode("", str_replace("/mod/scorm/datamodel.php", "/mod/goone/datamodel.php", $data))."</script>";
-        $cache->set('scorm12js', $data);
-        $data = $cache->get('scorm12js');
+        $data = implode("", str_replace("/mod/scorm/datamodel.php", "/mod/goone/datamodel.php", $data));
+        $cache->set($scormversion, $data);
+        $data = $cache->get($scormversion);
         return $data;
 }
 

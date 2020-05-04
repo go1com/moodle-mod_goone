@@ -84,31 +84,23 @@ $PAGE->requires->js(new moodle_url('/mod/scorm/module.js'), true);
 $PAGE->requires->js(new moodle_url('/mod/scorm/request.js'), true);
 
 echo $OUTPUT->header();
-echo(goone_inject_datamodel());
 
 if (!$newwin) {
     echo $OUTPUT->heading(format_string($goone->name));
 }
+
+// Correct order of operations is required here to ensure the SCORM API is available first.
+$data = array(
+    'datamodel' => goone_inject_datamodel()
+);
+echo $OUTPUT->render_from_template('mod_goone/datamodel', $data);
+
 goone_session_state($goone->id, $cmid);
-// GO1 SCORM content being rendered as HTML with token and learning object added,
-// 'loid' refers to specific GO1 content ID, 'token' is GO1 account specific access key .
-?>
 
-<script type="text/javascript" src="https://api.go1.co/scorm/assets/jquery-1.12.4.min.js"></script>
-<script>
-"use strict";
-
-const ScormPackage_Value = {
-"token": "<?php echo $DB->get_field('goone', 'token', array('id' => $goone->id)); ?>",
-"version": "1.2",
-"id": <?php echo $DB->get_field('goone', 'loid', array('id' => $goone->id)); ?>
-};
-</script>
-<script type="text/javascript" src="https://api.go1.co/scorm/assets/service.js"></script>
-<div id="content"></div>
-
-<?php
+$data = array (
+    'token' => $goone->token,
+    'loid' => $goone->loid,
+);
+echo $OUTPUT->render_from_template('mod_goone/view', $data);
 
 echo $OUTPUT->footer();
-
-
