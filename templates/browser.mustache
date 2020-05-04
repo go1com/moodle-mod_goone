@@ -24,31 +24,42 @@
 }}
 
 
-<div class="modal fade" id="lomodal" tabindex="-1" role="dialog" aria-labelledby="lomodalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg ">
-    <div class="modal-content " style="height:900px;width:900px;" >
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-      </div>
-      <div class="modal-body embed-responsive">
-        <div id="lospinny" class="preloader w-100 text-center" style="text-align:center; display:block;">
-            <img src="pix/spinner.gif">
-        </div>
-          <iframe class="embed-responsive-item" id="loiframe" src="" frameborder="0" allowtransparency="true" >
+<style>
+    .form-inline label {
+        display:block;
+    }
+    .multiselect-clear-filter{
+        display: none;
+    }
+    .row{
+        display: flex;
+    }
+    .go1-provider p{
+        font-weight: 300!important;
+    }
+    .badge {
+        margin-left:1rem;
+        margin-right:0.5rem;
+    }
+    .preloader {
+        text-align: center;
+    }
+    .modal-body {
+        overflow:auto;
+        height:55rem;
+    }
+    .card-img-top {
+        width:100%;
+        margin-left: auto!important;
+        margin-right: auto!important;
+    }
+</style>
 
-          </iframe>  
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">{{# str }} close, mod_goone {{/ str }}</button>
-        <button type="button" class="btn btn-primary" id="submitlo" loid="#" loname="#" onclick="return CloseMySelf(this);">{{# str }} select, mod_goone {{/ str }}</button>
-      </div>
-    </div>
-  </div>
-</div>
+
+
 
 <div class="container" >
-                    <h2>{{# str }} filters, mod_goone {{/ str }}</h2>
-
+    <h2>{{# str }} filters, mod_goone {{/ str }}</h2>
     <form class="form-inline">
         <div class="form-row w-100 mb-2">
             <div class="form-group col-sm-10 col-lg-10">
@@ -77,10 +88,10 @@
             </label>
             {{#facets}}{{#instance}}
             <div>
-            <select name="provider" id="provider" multiple="multiple">                
+            <select name="provider" id="provider" class="form-control form-control-sm multiselect-search" multiple="multiple">
                     {{#buckets}}
                     <option value="{{ key }}">{{ name }}</option>
-                    {{/buckets}}  
+                    {{/buckets}}
                 </select>
             </div>
             {{/instance}}{{/facets}}
@@ -90,7 +101,7 @@
                 {{#facets}}{{#language}}{{# str }} language, mod_goone {{/ str }}
             </label>
             <div>
-            <select name="language" id="language" multiple="multiple">
+            <select name="language" id="language" class="form-control form-control-sm form-control-sm multiselect-search" multiple="multiple">
                     {{#buckets}}<option value="{{ key }}" {{selected}}>{{ name }}</option>{{/buckets}}
                     {{/language}}{{/facets}}
                 </select>
@@ -101,7 +112,7 @@
                 {{#facets}}{{#tag}}{{# str }} tag, mod_goone {{/ str }}
             </label>
             <div>
-            <select name="tag" id="tag" multiple="multiple">
+            <select name="tag" id="tag" class="form-control form-control-sm multiselect-search" multiple="multiple">
                     {{#buckets}}<option value="{{ key }}">{{ key }}</option>{{/buckets}}
                     {{/tag}}{{/facets}}
                 </select>
@@ -112,7 +123,7 @@
                     {{# str }} type, mod_goone {{/ str }}
                 </label>
                 <div>
-                    <select name="type" id="type" class="form-control multiselect-search" multiple="multiple">
+                <select name="type" id="type" class="form-control form-control-sm multiselect-search" multiple="multiple">
                     <option value="activities">activities</option><option value="assignment">assignment</option><option value="attendance">attendance</option><option value="award">award</option><option value="course">course</option><option value="document">document</option><option value="event">event</option><option value="h5p">h5p</option><option value="iframe">iframe</option><option value="integration">integration</option><option value="interactive">interactive</option><option value="learning_pathway">learning_pathway</option><option value="learning_resource">learning_resource</option><option value="lti">lti</option><option value="question">question</option><option value="quiz">quiz</option><option value="resource">resource</option><option value="text">text</option><option value="video">video</option><option value="workshop">workshop</option>
                 </select>
             </div>
@@ -122,103 +133,6 @@
             </form>
 
 </div>
-    <script type="text/javascript">
-    $(document).ready(function() {
-        $('#sort').change(function() {
-                changeFilter();
-            });
-
-        $('#provider').multiselect({
-            inheritClass: true,
-            enableFiltering: true,
-            enableCaseInsensitiveFiltering:true,
-            maxHeight: 350,
-            buttonWidth: '15rem',
-            includeResetOption: true,
-            resetText: '{{# str }} clearselection, mod_goone {{/ str }}',
-            nonSelectedText: "Any",
-            onChange: function() {
-                changeFilter();
-            }});
-        $('#tag').multiselect({inheritClass: true,
-            enableFiltering: true,
-            enableCaseInsensitiveFiltering:true,
-            maxHeight: 350,
-            buttonWidth: '15rem',
-            includeResetOption: true,
-            resetText: '{{# str }} clearselection, mod_goone {{/ str }}',
-            nonSelectedText: "Any",
-            onChange: function(element, checked) {
-                changeFilter();
-            }});
-        $('#language').multiselect({inheritClass: true,
-            enableFiltering: true,
-            enableCaseInsensitiveFiltering:true,
-            maxHeight: 350,
-            buttonWidth: '15rem',
-            includeResetOption: true,
-            resetText: '{{# str }} clearselection, mod_goone {{/ str }}',
-            nonSelectedText: "Any",
-            onChange: function(element, checked) {
-                changeFilter();
-            }});
-        $('#type').multiselect({inheritClass: true,
-            enableFiltering: true,
-            enableCaseInsensitiveFiltering:true,
-            maxHeight: 350,
-            buttonWidth: '15rem',
-            includeResetOption: true,
-            resetText: '{{# str }} clearselection, mod_goone {{/ str }}',
-            nonSelectedText: "Any",
-            onChange: function(element, checked) {
-                changeFilter();
-            }});
-
-    $('.multiselect-reset')
-    .on(
-        'click',
-        function () {
-        changeFilter();      
-        }
-    );
-
-
-    });
-
-</script>
-
-
-
-
-<style>
-    .form-inline label {
-        display:block;
-    }
-    .multiselect-clear-filter{
-        display: none;
-    }
-    .row{
-        display: flex;
-    }
-    .go1-provider p{
-        font-weight: 300!important;
-    }
-    .badge {
-        margin-left:1rem;
-        margin-right:0.5rem;
-    }
-    .preloader {
-        text-align: center;
-    }
-    .modal-body {
-        height:55rem;
-    }
-    .card-img-top {
-        width:100%;
-        margin-left: auto!important;
-        margin-right: auto!important;
-    }
-</style>
 
 
 <div class="container">
@@ -226,8 +140,8 @@
             <h2>{{# str }} results, mod_goone {{/ str }}:</h2>
         </div>
         <div id="goone-browser-results">
-    
-            
+
+
         </div>
 
         <div id="spinny" class="preloader w-100 text-center" style="display:block;">
@@ -241,71 +155,3 @@
         </div>
 
 
-
-        <script>
-
-var offSet = 0;
-var totalHits = 0;
-var initial = 0;
-
-function changeFilter() {
-    if (initial == 0) {
-        $("#sort").val("relevance");
-        initial = 1;
-    }
-    offSet = 0;
-    $("#goone-browser-results").html("");
-    loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),$("#keyword").val(),$("#sort").val(),offSet);
-}
-
-function loadResults(type, tag, language, provider, keyword, sort, offSet){
-    url = "hits.php" + location.search
-     + "&type=" + type
-     + "&tag=" + tag
-     + "&language=" + language
-     + "&provider=" + provider
-     + "&keyword=" + keyword
-     + "&sort=" + sort
-     + "&offset=" + offSet;
-
-    url = encodeURI(url);
-
-    $("#spinny").show();
-    $.ajax({
-        url: url,
-        success: function (data) {
-            $("#goone-browser-results").append(data);
-            $("#spinny").hide();
-            if (totalHits <= 20 || offSet >= totalHits-20){
-            $("#load-more-div").hide();
-            $("#end-of-results").show();
-            } else {
-            $("#load-more-div").show();
-            $("#end-of-results").hide();
-             }
-            $("#latest-go1-result h2").html($(".go1-result").last().html());
-
-            if(type+'' != $("#type").val()+'' || tag+'' != $("#tag").val()+'' || language+'' != $("#language").val()+'' || provider+'' != $("#provider").val()+'') {
-                changeFilter();
-            }
-        }
-    });
-
-}
-$(document).ready(function() {
-        loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),$("#keyword").val(),$("#sort").val(),offSet);
-
-});
-
-$("#load-more").click(function() {
-    offSet = offSet + 20;
-    loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),$("#keyword").val(),$("#sort").val(),offSet);
-})
-$('#keyword').keypress(function (e) {
-  if (e.which == 13) {
-    $('#keyword').submit();
-    changeFilter();  
-  }
-});
-
-</script>

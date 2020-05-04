@@ -506,10 +506,19 @@ function goone_inject_datamodel() {
 
  * @return object
  */
-function goone_get_hits(array $data, $language, $tag) {
+function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset) {
+    global $PAGE, $OUTPUT;
     if (!goone_tokentest()) {
         return false;
     }
+
+    $data = array (
+        'keyword' => $keyword,
+        'type' => implode(',', $type),
+        'offset' => $offset,
+        'sort' => $sort,
+        'providers' => implode(',', $provider)
+    );
 
     $config = get_config('mod_goone');
     $data['limit'] = 20;
@@ -540,7 +549,6 @@ function goone_get_hits(array $data, $language, $tag) {
 
     $params = trim($params, '&');
     // Iterating each language/tag item due to current API limitations.
-    $language = explode(',', $language);
     foreach ($language as $lang) {
         // Workaround for Moodle < 3.1.
         if ($lang == 'null') {
@@ -550,7 +558,7 @@ function goone_get_hits(array $data, $language, $tag) {
             $params .= "&language%5B%5D=".$lang;
         }
     }
-    $tag = explode(',', $tag);
+
     foreach ($tag as $ta) {
         // Workaround for Moodle < 3.1.
         if ($ta == 'null') {
@@ -560,7 +568,6 @@ function goone_get_hits(array $data, $language, $tag) {
             $params .= "&tags%5B%5D=".$ta;
         }
     }
-
     $curl = new curl();
     // Appendeding to URL due to API limitations.
     $serverurl = "https://api.GO1.com/v2/learning-objects?facets=instance,tag,language&marketplace=all&".$params;
@@ -584,7 +591,9 @@ function goone_get_hits(array $data, $language, $tag) {
             $obj['image'] = "/mod/goone/pix/placeholder.png";
         }
     }
-    return $response;
+    $context = context_system::instance();
+    $PAGE->set_context($context);
+    return $OUTPUT->render_from_template('mod_goone/hits', $response);
 }
 
 /**
@@ -649,6 +658,8 @@ function goone_get_lang($lang) {
  * @return object
  */
 function goone_modal_overview($loid) {
+    global $PAGE, $OUTPUT;
+
     if (!goone_tokentest()) {
         return;
     }
@@ -659,10 +670,16 @@ function goone_modal_overview($loid) {
     $lodata = @json_decode($curl->get($serverurl), true);
     // Data cleanup and prettification.
     $lodata['has_items'] = !empty($lodata['items']);
-    foreach ($lodata['delivery'] as &$obj) {
-        $obj = goone_convert_hours_mins($obj);
+    if (!empty($lodata['delivery'])) {
+        foreach ($lodata['delivery'] as &$obj) {
+            $obj = goone_convert_hours_mins($obj);
+        }
     }
-    return $lodata;
+    if ($lodata['image'] == " ") {
+        unset($lodata['image']);
+    }
+
+    return json_encode($lodata);
 }
 
 /**

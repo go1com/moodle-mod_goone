@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Renders modal popup wiht GO1 course descriptions
+ * Service definitions
  *
  * @package   mod_goone
  * @copyright 2019, eCreators PTY LTD
@@ -23,23 +23,27 @@
  * @author    Fouad Saikali <fouad@ecreators.com.au>
  */
 
-require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
-require_once($CFG->dirroot.'/mod/goone/lib.php');
-require_login();
-$mode = required_param('mode', PARAM_TEXT);
-$id = required_param('id', PARAM_INT);
-$loid = required_param('loid', PARAM_INT);
+defined('MOODLE_INTERNAL') || die;
 
-goone_check_capabilities($mode, $id);
-
-$data = goone_modal_overview($loid);
-
-$context = context_system::instance();
-
-$PAGE->set_context($context);
-$PAGE->set_url('/mod/goone/browser.php');
-$PAGE->set_pagelayout('embedded');
-
-echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('mod_goone/modal', $data);
-echo $OUTPUT->footer();
+$functions = [
+    'mod_goone_get_hits' => [
+        'classname'     => 'mod_goone_external',
+        'methodname'    => 'get_hits',
+        'classpath'     => 'mod/goone/externallib.php',
+        'description'   => 'Retreive hits from GO1 API',
+        'type'          => 'read',
+        'capabilities'  => 'mod/goone:addinstance',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ],
+    'mod_goone_get_modal' => [
+        'classname'     => 'mod_goone_external',
+        'methodname'    => 'get_modal',
+        'classpath'     => 'mod/goone/externallib.php',
+        'description'   => 'Retreive learning object overview from GO1 API',
+        'type'          => 'read',
+        'capabilities'  => 'mod/goone:addinstance',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ]
+];

@@ -46,10 +46,10 @@ $context = context_system::instance();
 $PAGE->set_context($context);
 $PAGE->set_url('/mod/goone/browser.php');
 $PAGE->set_pagelayout('embedded');
-$PAGE->requires->jquery();
-$PAGE->requires->jquery_plugin('ui');
-$PAGE->requires->js( new moodle_url($CFG->wwwroot . '/mod/goone/js/bootstrap-multiselect.js'));
+$PAGE->set_title(get_string('contentbrowser', 'goone'));
+$PAGE->set_heading(get_string('contentbrowser', 'goone'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/mod/goone/css/bootstrap-multiselect.css'));
+$PAGE->requires->js_call_amd('mod_goone/browser', 'init');
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('mod_goone/browser', $facets);

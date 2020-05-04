@@ -27,7 +27,7 @@
 
 
   <div class="card mx-auto" style="max-width:500px;margin:auto;">
-  	{{#image}}<img class="card-img-top" style="max-height:300px;" src="{{image}}" alt="Card image cap">{{/image}}
+  	{{#image}}<img class="card-img-top" style="max-height:300px;" src="{{image}}" alt="Card image cap" onerror="this.style.display='none'">{{/image}}
   	<div class="card-body bg-light">
     <h3 class="card-title">{{title}}</h3>
     <p class="badge badge-black mr-1 m-0" style="text-transform:uppercase;">{{type}}</p>
@@ -36,11 +36,6 @@
     </div>
   </div>
 </div>
-
-
-
-
-
 
 <div class="container">
 	<div class="row">
@@ -56,9 +51,6 @@
 		</div>
 	</div>
 </div>
-
-
-
 
 {{#has_items}}
 <div class="container">
@@ -107,5 +99,3 @@
 		</div>
 	</div>
 </div>
-
-

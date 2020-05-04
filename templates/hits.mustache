@@ -23,10 +23,10 @@
   @author     Fouad Saikali <fouad@ecreators.com.au>
 }}
 
-<h2 class="go1-result" style="display:none;">{{# str }} results, mod_goone {{/ str }}: {{ total }}</h2>
+<h2 class="go1-result" style="display:none;">{{# str }} results, mod_goone {{/ str }}: <span id=total-hits>{{ total }}</span></h2>
 {{#hits}}
 
-<a id="lomodal" data-toggle="modal" class="lomodal" data-target="#lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;">
+<a id="lomodal" class="lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;">
  <div class="card container my-3">
     <div class="h100" >
         <div class="row" style="overflow:hidden;"  style="height:160px;max-height:160px">
@@ -50,28 +50,3 @@
 
 </a>
 {{/hits}}
-
-<script>
-$('.lomodal').click(function(){
-    var id=$(this).data('id');
-    var name=$(this).data('name');
-    $('#loiframe').attr('src', 'modal.php'+ location.search + '&loid=' + id);
-    $('#submitlo').attr('loid',id);
-    $('#submitlo').attr('loname',name);
-})
-
-function CloseMySelf(sender) {
-    try {
-        window.opener.HandlePopupResult(sender.getAttribute("loid"),sender.getAttribute("loname"));
-    }
-    catch (err) {}
-
-    window.close();
-    return false;
-}
-var totalHits = {{ total }};
-
-$('#lomodal').on('hidden.bs.modal', function () {
-    $('#loiframe').attr('src','');
-})
-</script>
