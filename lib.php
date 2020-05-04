@@ -44,37 +44,39 @@ function goone_add_instance($data, $mform = null) {
 
     $cmid = $data->coursemodule;
     $data->timecreated = time();
-    // Create temporary storage directory since we need to open a zip.
-    $tempdir = make_temp_directory('goone/');
-    $filename = $data->loid.'.zip';
-    $tempfile = fopen($CFG->tempdir . '/goone/' . $filename, "w+");
-    // Download GO1 SCORM zip file from external API.
-    $curl = new curl();
-    $serverurl = "https://api.GO1.com/v2/learning-objects/".$data->loid."/scorm";
-    $header = array ("Authorization: Bearer ".get_config('mod_goone', 'token'));
-    $curl->setHeader($header);
-    $curlopts = array(
-        'file' => $tempfile,
-        'followlocation' => true
-        );
-    $curl->download_one($serverurl, null, $curlopts);
+    if (empty($data->token)) {
+        // Create temporary storage directory since we need to open a zip.
+        $tempdir = make_temp_directory('goone/');
+        $filename = $data->loid.'.zip';
+        $tempfile = fopen($CFG->tempdir . '/goone/' . $filename, "w+");
+        // Download GO1 SCORM zip file from external API.
+        $curl = new curl();
+        $serverurl = "https://api.GO1.com/v2/learning-objects/".$data->loid."/scorm";
+        $header = array ("Authorization: Bearer ".get_config('mod_goone', 'token'));
+        $curl->setHeader($header);
+        $curlopts = array(
+            'file' => $tempfile,
+            'followlocation' => true
+            );
+        $curl->download_one($serverurl, null, $curlopts);
 
-    fclose($tempfile);
-    // Open zip and extract 'config.js'.
-    $packer = get_file_packer('application/zip');
-    if ($packer->extract_to_pathname($CFG->tempdir . '/goone/' . $filename, $tempdir . $data->loid)) {
-        $token = file_get_contents($tempdir . $data->loid . '/config.js');
-        // Read token from config.js file to be stored in {goone} table.
-        preg_match('/{([^}]*)}/', $token, $token);
-        $token = json_decode($token[0]);
-        $data->token = $token->token;
-        fulldelete($tempdir.$filename);
-        fulldelete($tempdir.$data->loid);
-        if (!$token->token) {
+        fclose($tempfile);
+        // Open zip and extract 'config.js'.
+        $packer = get_file_packer('application/zip');
+        if ($packer->extract_to_pathname($CFG->tempdir . '/goone/' . $filename, $tempdir . $data->loid)) {
+            $token = file_get_contents($tempdir . $data->loid . '/config.js');
+            // Read token from config.js file to be stored in {goone} table.
+            preg_match('/{([^}]*)}/', $token, $token);
+            $token = json_decode($token[0]);
+            $data->token = $token->token;
+            fulldelete($tempdir.$filename);
+            fulldelete($tempdir.$data->loid);
+            if (!$token->token) {
+                throw new moodle_exception('lodownloaderror', $data->loid);
+            }
+        } else {
             throw new moodle_exception('lodownloaderror', $data->loid);
         }
-    } else {
-        throw new moodle_exception('lodownloaderror', $data->loid);
     }
     $data->id = $DB->insert_record('goone', $data);
     $DB->set_field('course_modules', 'instance', $data->id, array('id' => $cmid));
