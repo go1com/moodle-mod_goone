@@ -23,7 +23,6 @@
   @author     Fouad Saikali <fouad@ecreators.com.au>
 }}
 
-
 <style>
     .form-inline label {
         display:block;
@@ -154,4 +153,10 @@
         {{# str }} endofresults, mod_goone {{/ str }}
         </div>
 
+{{#js}}
+M.util.js_pending('theme_boost/loader');
+require(['theme_boost/loader'], function() {
+  M.util.js_complete('theme_boost/loader');
+});
+{{/js}}
 
