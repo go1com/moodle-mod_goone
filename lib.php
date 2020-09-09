@@ -45,38 +45,7 @@ function goone_add_instance($data, $mform = null) {
     $cmid = $data->coursemodule;
     $data->timecreated = time();
     if (empty($data->token)) {
-        // Create temporary storage directory since we need to open a zip.
-        $tempdir = make_temp_directory('goone/');
-        $filename = $data->loid.'.zip';
-        $tempfile = fopen($CFG->tempdir . '/goone/' . $filename, "w+");
-        // Download GO1 SCORM zip file from external API.
-        $curl = new curl();
-        $serverurl = "https://api.GO1.com/v2/learning-objects/".$data->loid."/scorm";
-        $header = array ("Authorization: Bearer ".get_config('mod_goone', 'token'));
-        $curl->setHeader($header);
-        $curlopts = array(
-            'file' => $tempfile,
-            'followlocation' => true
-            );
-        $curl->download_one($serverurl, null, $curlopts);
-
-        fclose($tempfile);
-        // Open zip and extract 'config.js'.
-        $packer = get_file_packer('application/zip');
-        if ($packer->extract_to_pathname($CFG->tempdir . '/goone/' . $filename, $tempdir . $data->loid)) {
-            $token = file_get_contents($tempdir . $data->loid . '/config.js');
-            // Read token from config.js file to be stored in {goone} table.
-            preg_match('/{([^}]*)}/', $token, $token);
-            $token = json_decode($token[0]);
-            $data->token = $token->token;
-            fulldelete($tempdir.$filename);
-            fulldelete($tempdir.$data->loid);
-            if (!$token->token) {
-                throw new moodle_exception('lodownloaderror', $data->loid);
-            }
-        } else {
-            throw new moodle_exception('lodownloaderror', $data->loid);
-        }
+        $data->token = goone_download_scorm($data->loid);
     }
     $data->id = $DB->insert_record('goone', $data);
     $DB->set_field('course_modules', 'instance', $data->id, array('id' => $cmid));
@@ -85,6 +54,67 @@ function goone_add_instance($data, $mform = null) {
 
     return $data->id;
 }
+
+/**
+ * Downloads SCORM Zip file from GO1 API and extracts
+ * token parameter.
+ * @param object $loid
+ * @return string
+ */
+function goone_download_scorm($loid) {
+    global $CFG;
+    // Create temporary storage directory since we need to open a zip.
+    $tempdir = make_temp_directory('goone/');
+    $filename = $loid.'.zip';
+    $tempfile = fopen($CFG->tempdir . '/goone/' . $filename, "w+");
+    // Download GO1 SCORM zip file from external API.
+    $curl = new curl();
+    $serverurl = "https://api.GO1.com/v2/learning-objects/".$loid."/scorm";
+    $header = array ("Authorization: Bearer ".get_config('mod_goone', 'token'));
+    $curl->setHeader($header);
+    $curlopts = array(
+        'file' => $tempfile,
+        'followlocation' => true
+        );
+    $curl->download_one($serverurl, null, $curlopts);
+
+    fclose($tempfile);
+    $token = goone_extract_scorm_token($loid, $tempdir, $filename);
+    fulldelete($tempdir.$filename);
+    fulldelete($tempdir.$loid);
+    if (!$token) {
+        throw new moodle_exception('lodownloaderror', $loid);
+    }
+    return $token;
+}
+
+/**
+ * Extracts token parameter from GO1 SCORM Zip.
+ * @param string $loid
+ * @param string $tempdir
+ * @param string $filename
+ * @param string $filepath
+ * @return object
+ */
+function goone_extract_scorm_token($loid, $tempdir, $filename, $filepath = null ) {
+    global $CFG;
+    // Open zip and extract 'config.js'.
+    if (empty($filepath)) {
+        $filepath = $CFG->tempdir . '/goone/' . $filename;
+    }
+    $tempdir = make_temp_directory('goone/');
+    $packer = get_file_packer('application/zip');
+    if ($packer->extract_to_pathname($filepath, $tempdir . $loid)) {
+        $token = file_get_contents($tempdir . $loid . '/config.js');
+        // Read token from config.js file to be stored in {goone} table.
+        preg_match('/{([^}]*)}/', $token, $token);
+        $token = json_decode($token[0])->token;
+        return $token;
+    } else {
+        return false;
+    }
+}
+
 
 /**
  * Given an object containing all the necessary data,
@@ -634,7 +664,7 @@ function goone_get_facets() {
  * @param string $lang
  * @return string
  */
-function goone_get_lang($lang) {
+function goone_get_lang($lang = null) {
     $languages = get_string_manager()->get_list_of_languages();
     if (array_key_exists($lang, $languages)) {
         return $languages[$lang];
@@ -717,14 +747,14 @@ function goone_check_capabilities($mode, $id) {
             $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
             $context = context_course::instance($course->id);
             require_capability('mod/goone:addinstance', $context);
-            return;
+            return true;
         case 'update':
             // Check if module context capability allowed.
             $goone = $DB->get_record('goone', array('id' => $id), '*', MUST_EXIST);
             $cm = get_coursemodule_from_instance("goone", $goone->id, $goone->course);
             $context = context_module::instance($cm->id);
             require_capability('mod/goone:addinstance', $context);
-            return;
+            return true;
         default:
             throw new moodle_exception('invalidparam');
     }
