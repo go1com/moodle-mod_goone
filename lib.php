@@ -295,7 +295,6 @@ function goone_tokentest() {
  * @return object
  */
 function goone_clean_hits($data) {
-
     $data = preg_replace(
         '/\\\\u[0-9A-F]{4}/i', '', str_replace("\u003C", "<", str_replace("\u003E", ">", str_replace("\/", "/", $data)))
     );
@@ -303,7 +302,6 @@ function goone_clean_hits($data) {
     $data = preg_replace('(\s*<[a-z A-Z 0-9]*>\\s*)', '', $data);
     $data = preg_replace('(\s*<\/[a-z A-Z 0-9]*>\s*)', ' ', $data);
     $data = preg_replace('(\s*<[^>]*>\s*)', '', $data);
-
     return $data;
 }
 
@@ -502,10 +500,13 @@ function goone_inject_datamodel() {
 /**
  * Retrieves GO1 search results from GO1 API for Content Browser
  *
- * @param array $data
- * @param string $language
- * @param string $tag
-
+ * @param array $type
+ * @param array $tag
+ * @param array $language
+ * @param array $provider
+ * @param string $keyword
+ * @param string $sort
+ * @param int $offset
  * @return object
  */
 function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset) {

@@ -32,12 +32,12 @@ defined('MOODLE_INTERNAL') || die();
  * @return bool
  */
 function xmldb_goone_upgrade($oldversion) {
-	global $DB;
+    global $DB;
 
     $dbman = $DB->get_manager();
 
-	if ($oldversion < 2020082900) {
-		$table = new xmldb_table('goone');
+    if ($oldversion < 2020082900) {
+        $table = new xmldb_table('goone');
         $field = new xmldb_field('intro', XMLDB_TYPE_TEXT, null, null, false, null, null, null);
         $dbman->change_field_type($table, $field);
         $field = new xmldb_field('introformat', XMLDB_TYPE_INTEGER, '4', null, '0', null, null, null);

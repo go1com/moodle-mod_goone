@@ -25,8 +25,23 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Data generator class for mod_goone.
+ *
+ * @package    mod_goone
+ * @copyright 2019, eCreators PTY LTD
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Fouad Saikali <fouad@ecreators.com.au>
+ */
 class mod_goone_generator extends testing_module_generator {
 
+    /**
+     * Creates a mod_goone instance
+     *
+     * @param array $record
+     * @param array $options
+     * @return StdClass
+     */
     public function create_instance($record = null, array $options = null) {
         $record = (object)(array)$record;
 

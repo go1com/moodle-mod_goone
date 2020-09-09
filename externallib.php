@@ -36,6 +36,13 @@ class mod_goone_external extends external_api {
 
     /**
      * Describes the parameters for get_hits
+     * @param array $type
+     * @param array $tag
+     * @param array $language
+     * @param array $provider
+     * @param string $keyword
+     * @param string $sort
+     * @param int $offset
      * @return external_function_parameters
      */
     public static function get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset) {
@@ -78,6 +85,7 @@ class mod_goone_external extends external_api {
     }
     /**
      * Describes the parameters for get_modal
+     * @param string $loid
      * @return external_function_parameters
      */
     public static function get_modal($loid) {
