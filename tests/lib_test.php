@@ -110,4 +110,29 @@ class mod_goone_lib_testcase extends advanced_testcase {
         $this->assertTrue(!empty(strpos(goone_inject_datamodel(), $match)));
     }
 
+    public function test_goone_session_state() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->getDataGenerator()->create_module('goone', array('course' => $course->id));
+        $student = $this->getDataGenerator()->create_user();
+        $this->setUser($student->id);
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $mid = $DB->get_record('modules', array('name' => 'goone'), '*', MUST_EXIST);
+        $cm = $DB->get_record('course_modules', array('module' => $mid->id, 'instance' => $cm->id), '*', MUST_EXIST);
+        // No completion record.
+        $sstate = goone_session_state($cm->id, $cm->id);
+        $this->assertTrue($sstate->cmistate == 'normal');
+        // In progress.
+        goone_set_completion($cm, $student->id, 'test', "inprogress");
+        $sstate = goone_session_state($cm->instance, $cm->id);
+        $this->assertTrue($sstate->cmistate == 'normal');
+        // Completed.
+        goone_set_completion($cm, $student->id, 'test', "completed");
+        $sstate = goone_session_state($cm->instance, $cm->id);
+        $this->assertTrue($sstate->cmistate == 'review');
+
+    }
+
 }

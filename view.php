@@ -95,8 +95,14 @@ $data = array(
 );
 echo $OUTPUT->render_from_template('mod_goone/datamodel', $data);
 
-goone_session_state($goone->id, $cmid);
-
+$sstate = goone_session_state($goone->id, $cmid);
+if (!empty($sstate)) {
+    $PAGE->requires->js_init_call(
+        'M.scorm_api.init', array($sstate->def, $sstate->cmiobj, $sstate->cmiint, $sstate->cmistring256,
+        $sstate->cmistring4096, false, "0", "0", $CFG->wwwroot,
+        sesskey(), "6", "1", $sstate->cmistate, $cmid, "GO1", false, true, "3")
+    );
+}
 $data = array (
     'token' => $goone->token,
     'loid' => $goone->loid,

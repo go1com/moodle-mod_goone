@@ -204,7 +204,6 @@ function goone_supports($feature) {
             return true;
         case FEATURE_BACKUP_MOODLE2:
             return true;
-
         default:
             return null;
     }
@@ -249,8 +248,6 @@ function goone_get_completion_state($course, $cm, $userid, $type) {
 
     return $result;
 }
-
-
 
 /**
  * Generates go token and writes result to plugin config
@@ -349,7 +346,6 @@ function goone_session_state($gooneid, $cmid) {
     $completionrecord = $DB->get_record(
         'goone_completion', array('gooneid' => $gooneid, 'userid' => $USER->id), $fields = '*', $strictness = IGNORE_MISSING
     );
-
     $def->{(3)} = goone_scorm_def(1, '');
     $def->{(6)} = goone_scorm_def(1, '');
     $cmistate = "normal";
@@ -360,6 +356,7 @@ function goone_session_state($gooneid, $cmid) {
         $cmistate = "normal";
     }
     if ($completionrecord && $completionrecord->completed == 2) {
+
         $def->{(3)} = goone_scorm_def(3, '');
         $def->{(6)} = goone_scorm_def(4, '');
         $cmistate = "review";
@@ -374,10 +371,16 @@ function goone_session_state($gooneid, $cmid) {
     $cmistring256 = '^[\\u0000-\\uFFFF]{0,64000}$';
     $cmistring4096 = $cmistring256;
 
-    $PAGE->requires->js_init_call(
-        'M.scorm_api.init', array($def, $cmiobj, $cmiint, $cmistring256, $cmistring4096, false, "0", "0", $CFG->wwwroot,
-        sesskey(), "6", "1", $cmistate, $cmid, "GO1", false, true, "3")
-    );
+    $sstate = new stdClass();
+    $sstate->def = $def;
+    $sstate->cmiobj = $cmiobj;
+    $sstate->cmiint = $cmiint;
+    $sstate->cmistring256 = $cmistring256;
+    $sstate->cmistring4096 = $cmistring4096;
+    $sstate->cmistate = $cmistate;
+
+    return($sstate);
+
 }
 
 /**
@@ -477,12 +480,11 @@ function goone_set_completion($cm, $userid, $location, $type) {
     $gcomp->gooneid = $cm->instance;
     $gcomp->position = $location;
     $gcomp->timemodified = time();
-
     $compstate = $DB->get_record(
         'goone_completion', array('gooneid' => $cm->instance, 'userid' => $userid), 'id,completed', $strictness = IGNORE_MISSING
     );
 
-    if ($type == "completed" || $compstate->completed == 2) {
+    if ($type == "completed" || (!empty($compstate) && $compstate->completed == 2 )) {
         $gcomp->completed = 2;
         $course = new stdClass();
         $course->id = $cm->course;
@@ -503,6 +505,7 @@ function goone_set_completion($cm, $userid, $location, $type) {
         $DB->insert_record('goone_completion', $gcomp);
         return true;
     }
+    return false;
 }
 
 /**
