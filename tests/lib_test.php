@@ -37,9 +37,16 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
  */
 class mod_goone_lib_testcase extends advanced_testcase {
 
+    public function test_goone_supports() {
+        $this->assertTrue(goone_supports(FEATURE_COMPLETION_TRACKS_VIEWS) == true);
+        $this->assertTrue(goone_supports(FEATURE_COMPLETION_HAS_RULES) == true);
+        $this->assertTrue(goone_supports(FEATURE_BACKUP_MOODLE2) == true);
+    }
 
     public function test_goone_convert_hours_mins() {
         $this->assertTrue(goone_convert_hours_mins("62") == "01:02");
+        $this->assertTrue(empty(goone_convert_hours_mins("0")));
+
     }
 
     public function test_goone_set_completion() {
@@ -76,8 +83,9 @@ class mod_goone_lib_testcase extends advanced_testcase {
     }
 
     public function test_goone_get_lang() {
-        // Test known language.
+        // Test known languages.
         $this->assertTrue(goone_get_lang("en") == "English");
+        $this->assertTrue(goone_get_lang("en-us") == "English (United States)");
         // Test unknown language.
         $this->assertTrue(goone_get_lang("xy") == "xy");
         // Test no language.
@@ -126,13 +134,27 @@ class mod_goone_lib_testcase extends advanced_testcase {
         $this->assertTrue($sstate->cmistate == 'normal');
         // In progress.
         goone_set_completion($cm, $student->id, 'test', "inprogress");
+        $this->assertFalse(goone_get_completion_state($course, $cm, $student->id, COMPLETION_AND));
         $sstate = goone_session_state($cm->instance, $cm->id);
         $this->assertTrue($sstate->cmistate == 'normal');
         // Completed.
         goone_set_completion($cm, $student->id, 'test', "completed");
+        $this->assertTrue(goone_get_completion_state($course, $cm, $student->id, COMPLETION_AND));
         $sstate = goone_session_state($cm->instance, $cm->id);
         $this->assertTrue($sstate->cmistate == 'review');
 
     }
+
+    public function test_goone_signup_url() {
+        global $CFG;
+        $this->resetAfterTest(true);
+
+        $partnerid = "12345";
+        set_config('partnerid', $partnerid, 'mod_goone');
+        $this->assertTrue(goone_signup_url() == 'https://auth.GO1.com/oauth/authorize?client_id=Moodle&response_type=code&
+            redirect=false&redirect_uri='.$CFG->wwwroot.
+            '&new_client=Moodle&partner_portal_id='.$partnerid);
+    }
+
 
 }
