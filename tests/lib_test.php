@@ -155,7 +155,6 @@ class mod_goone_lib_testcase extends advanced_testcase {
             'response_type=code&redirect=false&redirect_uri='.$CFG->wwwroot.
             '&new_client=Moodle&partner_portal_id='.$partnerid);
     }
-    }
 
 
 }
