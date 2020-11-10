@@ -151,9 +151,10 @@ class mod_goone_lib_testcase extends advanced_testcase {
 
         $partnerid = "12345";
         set_config('partnerid', $partnerid, 'mod_goone');
-        $this->assertTrue(goone_signup_url() == 'https://auth.GO1.com/oauth/authorize?client_id=Moodle&response_type=code&
-            redirect=false&redirect_uri='.$CFG->wwwroot.
+        $this->assertTrue(goone_signup_url() == 'https://auth.GO1.com/oauth/authorize?client_id=Moodle&'.
+            'response_type=code&redirect=false&redirect_uri='.$CFG->wwwroot.
             '&new_client=Moodle&partner_portal_id='.$partnerid);
+    }
     }
 
 
