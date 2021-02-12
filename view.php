@@ -58,7 +58,7 @@ $PAGE->requires->js_call_amd('mod_goone/viewer', 'init');
 $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 
-$exiturl = course_get_url($course, $cm->section);
+$exiturl = course_get_url($course, $cm->sectionnum);
 $strexit = get_string('exitactivity', 'scorm');
 $exitlink = html_writer::link($exiturl, $strexit, array('title' => $strexit, 'class' => 'btn btn-default'));
 $PAGE->set_button($exitlink);
