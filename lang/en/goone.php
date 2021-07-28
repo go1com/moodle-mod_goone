@@ -97,4 +97,5 @@ $string['partnerid'] = "Partner ID";
 $string['partneriddesc'] = "For use by GO1 partners only.";
 $string['partnersettingheading'] = "GO1 partner settings";
 $string['goone:addinstance'] = "Add or update a GO1 conent item";
+$string['synccompletiontask'] = 'Sync Completion records';
 
