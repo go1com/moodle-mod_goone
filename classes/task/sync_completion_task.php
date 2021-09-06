@@ -23,6 +23,7 @@ class sync_completion_task extends \core\task\scheduled_task {
     }
 
     public function execute() {
+        return;
         global $DB, $CFG;
         require_once($CFG->libdir.'/completionlib.php');
         $adminuserid = get_admin()->id;
