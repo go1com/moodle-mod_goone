@@ -15,20 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information
- *
+ * Task definition for mod_goone.
  * @package   mod_goone
- * @copyright 2019 Fouad Saikali <fouad@ecreators.com.au>
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'mod_goone';
-$plugin->version  = 2020082901;
-$plugin->release  = 'v1.0';
-$plugin->requires = 2015111600;
-$plugin->maturity = MATURITY_STABLE;
-$plugin->dependencies = array(
-    'mod_scorm' => ANY_VERSION,
-);
+$tasks = [
+    [
+        'classname' => 'mod_goone\task\sync_completion_task',
+        'blocking' => 1,
+        'minute' => '*',
+        'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    ]
+];
