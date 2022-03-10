@@ -69,6 +69,11 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
         // See MDL-9367.
         $data->timeopen = $this->apply_date_offset($data->timeopen);
         $data->timeclose = $this->apply_date_offset($data->timeclose);
+        
+        // Ensure intro is not null. If it is null set to a blank string to avoid DB error.
+        if (!property_exists($data, 'intro')) {
+            $data->intro = '';
+        }
 
         // Insert the goone record.
         $newitemid = $DB->insert_record('goone', $data);
