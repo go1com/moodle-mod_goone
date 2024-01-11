@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'mod_goone';
-$plugin->version  = 2020082900;
-$plugin->release  = 'v1.0';
+$plugin->version  = 2022111703;
+$plugin->release  = 'v2.0';
 $plugin->requires = 2015111600;
 $plugin->maturity = MATURITY_STABLE;
 $plugin->dependencies = array(

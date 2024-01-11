@@ -43,7 +43,28 @@ function xmldb_goone_upgrade($oldversion) {
         $field = new xmldb_field('introformat', XMLDB_TYPE_INTEGER, '4', null, '0', null, null, null);
         $dbman->change_field_type($table, $field);
 
-        upgrade_plugin_savepoint(true, '2020082900', 'mod', 'goone');
+        upgrade_mod_savepoint(true, 2020082900, 'goone');
+    }
+
+    if( $oldversion < 2022102000){      
+        // Loads ddl manager and xmldb classes.
+        $dbman = $DB->get_manager(); 
+
+        // Define table mod_goone_webhook_logs to be created.
+        $table = new xmldb_table('mod_goone_webhook_logs');
+
+        // Adding fields to table mod_goone_webhook_logs.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('message_info', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table mod_goone_webhook_logs.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Conditionally launch create table for mod_goone_webhook_logs.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
     }
     return true;
 }

@@ -29,5 +29,5 @@ require_login();
 $id = required_param('id', PARAM_INT);
 
 if (!$course = $DB->get_record('course', array('id' => $id))) {
-    print_error('Course ID is incorrect');
+    throw new moodle_exception('Course ID is incorrect');
 }
