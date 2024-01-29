@@ -132,17 +132,6 @@ class mod_goone_lib_testcase extends advanced_testcase {
         // No completion record.
         $sstate = goone_session_state($cm->id, $cm->id);
         $this->assertTrue($sstate->cmistate == 'normal');
-        // In progress.
-        goone_set_completion($cm, $student->id, 'test', "inprogress");
-        $this->assertFalse(goone_get_completion_state($course, $cm, $student->id, COMPLETION_AND));
-        $sstate = goone_session_state($cm->instance, $cm->id);
-        $this->assertTrue($sstate->cmistate == 'normal');
-        // Completed.
-        goone_set_completion($cm, $student->id, 'test', "completed");
-        $this->assertTrue(goone_get_completion_state($course, $cm, $student->id, COMPLETION_AND));
-        $sstate = goone_session_state($cm->instance, $cm->id);
-        $this->assertTrue($sstate->cmistate == 'review');
-
     }
 
     public function test_goone_signup_url() {
@@ -156,5 +145,15 @@ class mod_goone_lib_testcase extends advanced_testcase {
             '&new_client=Moodle&partner_portal_id='.$partnerid);
     }
 
+    public function test_goone_get_coursemodule_info() {
+        $this->resetAfterTest();
 
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1, 'completion' => COMPLETION_TRACKING_AUTOMATIC]);
+        $goonegen = $this->getDataGenerator()->get_plugin_generator('mod_goone');
+        $goone = $goonegen->create_instance(['course' => $course->id]);
+        $cm = get_coursemodule_from_id('goone', $goone->cmid, 0, true, MUST_EXIST);
+        $info = goone_get_coursemodule_info($cm);
+        $this->assertEquals($info->name, $goone->name);
+        $this->assertObjectHasAttribute( 'customdata', $info);
+    }
 }

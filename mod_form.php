@@ -63,6 +63,8 @@ class mod_goone_mod_form extends moodleform_mod {
         global $CFG, $DB, $OUTPUT, $PAGE, $browserurl;
 
         $mform =& $this->_form;
+
+        $mform->addElement('header', 'general', get_string('general', 'form'));
         $mform->addElement('text', 'name', get_string('name'), array('size' => '64'));
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', get_string('nonameselected', 'goone'), 'required', null, 'client');

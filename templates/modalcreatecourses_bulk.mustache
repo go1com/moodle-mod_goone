@@ -1,0 +1,111 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+  GO1 local plugin.
+
+   @package     mod_goone
+   @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
+   @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+<style>
+    #page-mod-goone-index_bulk .form-control-goone {
+        width:50%;
+    }
+    #page-mod-goone-index_bulk .resume .panel-body {
+	    border: 1px solid;
+	    padding: 10px;
+    }
+    #page-mod-goone-index_bulk .resume .panel-heading {
+    	margin-top: 15px;
+    	margin-bottom: 15px;
+    }
+
+    #page-mod-goone-index_bulk .selected_items .panel.panel-default .panel-title {
+    	font-weight: bold;
+    }
+
+    #page-mod-goone-index_bulk .panel.panel-default.resume .panel-body {
+    	max-height: 450px;
+    	overflow-y: auto;
+    }
+</style>
+
+{{#has_selected_items}}
+<div class="container selected_items">
+	<div class="panel panel-default">
+		<div class="panel-heading">
+		    <h3 class="panel-title">{{# str }} actiontotake, mod_goone {{/ str }}</h3>
+		</div>
+		<div class="panel-body">
+			<div class="container" id="search-modal-{{uniqid}}">
+				<div class="form-item row" id="admin-courseidnumber">
+				    <div class="form-label col-sm-3 text-sm-right">
+				            <label>  
+				                {{# str }} createcourseperitem, mod_goone {{/ str }}
+				            </label>
+				    </div>
+				    <div class="form-setting col-sm-9">
+				        <div class="form-radio defaultsnext">
+				    		<input type="radio" name="createcourse" class="form-control-goone" value="1">
+						</div> 
+				    </div>
+				</div>
+				<div class="form-item row" id="admin-courseidnumber">
+				    <div class="form-label col-sm-3 text-sm-right">
+			            <label>
+			                {{# str }} createsinglecourse, mod_goone {{/ str }}
+			            </label>
+				    </div>
+				    <div class="form-setting col-sm-9">
+				        <div class="form-radio defaultsnext">
+				    		<input type="radio" name="createcourse" class="form-control-goone" value="2">
+						</div> 
+				    </div>
+				</div>
+			   </div>
+			</div>
+		</div>
+	<div class="panel panel-default resume">
+		<div class="panel-heading">
+		    <h3 class="panel-title">{{# str }} selecteditemsresume, mod_goone {{/ str }}  ({{totalelements}})</h3>
+		</div>
+		<div class="panel-body">
+			<ul class="list-unstyled card-columns list-group-flush" style="column-count: 1;">
+				{{#selected_items}}
+				<li  class="list-group-item">{{name}}</li>
+				{{/selected_items}}
+			</ul>
+		</div>    
+		<input type="hidden" value="{{items_ids}}" id="selected_items_ids"/>
+	</div>    
+</div>    
+{{/has_selected_items}}
+{{^has_selected_items}}
+<div id="resultcoursesearch">
+	<div class="container">
+		<div class="panel panel-default">
+	        <div class="panel-heading">
+	            <h3 class="panel-title">{{# str }} searchresulttitle, mod_goone {{/ str }}</h3>
+	        </div>
+	        <div class="alert alert-warning">
+			{{# str }} coursesnotselected, mod_goone {{/ str }}
+	        </div>
+		</div>
+	</div>
+</div>
+{{/has_selected_items}}
+

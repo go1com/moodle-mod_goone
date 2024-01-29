@@ -32,33 +32,32 @@ require_once($CFG->dirroot.'/mod/scorm/datamodels/scorm_12lib.php');
 $newwin = false;
 $cmid   = required_param('id', PARAM_INT);
 $newwin = optional_param('win', '', PARAM_INT);  // Course Module ID.
-$cm     = get_coursemodule_from_id('goone', $cmid, 0, false, MUST_EXIST);
-$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 if ($newwin == 1) {
     $newwin = true;
 }
 
-require_login($course, true, $cm);
-
-if (!$cm = get_coursemodule_from_id('goone', $cmid)) {
-    print_error(get_string('cmidincorrect', 'goone'));
+if (!$cm = get_coursemodule_from_id('goone', $cmid, 0, true, MUST_EXIST)) {
+    throw new moodle_exception(get_string('cmidincorrect', 'goone'));
 }
-if (!$course = $DB->get_record('course', array('id' => $cm->course))) {
-    print_error(get_string('courseincorrect', 'goone'));
+if (!$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST)) {
+    throw new moodle_exception(get_string('courseincorrect', 'goone'));
 }
 if (!$goone = $DB->get_record('goone', array('id' => $cm->instance))) {
-    print_error(get_string('cmincorrect', 'goone'));
+    throw new moodle_exception(get_string('cmincorrect', 'goone'));
 }
+
+require_login($course, true, $cm);
+$context = context_module::instance($cm->id);
+require_capability('mod/goone:view', $context);
 
 $PAGE->set_url('/mod/goone/view.php', array('id' => $cm->id));
 $PAGE->set_title($goone->name);
 $PAGE->requires->js_call_amd('mod_goone/viewer', 'init');
 
-
 $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 
-$exiturl = course_get_url($course, $cm->section);
+$exiturl = course_get_url($course, $cm->sectionnum);
 $strexit = get_string('exitactivity', 'scorm');
 $exitlink = html_writer::link($exiturl, $strexit, array('title' => $strexit, 'class' => 'btn btn-default'));
 $PAGE->set_button($exitlink);
@@ -70,7 +69,6 @@ if ($newwin == 1) {
 $isnewwin = $DB->get_field('goone', 'popup', array('id' => $goone->id));
 if ($isnewwin == 1 && $newwin == 0) {
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(format_string($goone->name));
     echo get_string('opennewwin', 'goone');
     $urltogo = new moodle_url('/mod/goone/view.php', array('id' => $cm->id));
     $PAGE->requires->js_call_amd('mod_goone/viewer', 'newwindow', array(($urltogo->__toString())));
@@ -84,10 +82,6 @@ $PAGE->requires->js(new moodle_url('/mod/scorm/module.js'), true);
 $PAGE->requires->js(new moodle_url('/mod/scorm/request.js'), true);
 
 echo $OUTPUT->header();
-
-if (!$newwin) {
-    echo $OUTPUT->heading(format_string($goone->name));
-}
 
 // Correct order of operations is required here to ensure the SCORM API is available first.
 $data = array(

@@ -37,7 +37,7 @@ class mod_goone_external extends external_api {
     /**
      * Describes the parameters for get_hits
      * @param array $type
-     * @param array $tag
+     * @param array $topic
      * @param array $language
      * @param array $provider
      * @param string $keyword
@@ -71,15 +71,15 @@ class mod_goone_external extends external_api {
     public static function get_hits_parameters() {
         return new external_function_parameters([
                 'type' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'type', VALUE_OPTIONAL), ''),
+                    new external_value(PARAM_TEXT, 'type', VALUE_REQUIRED), ''),
                 'tag' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'tag', VALUE_OPTIONAL), ''),
+                    new external_value(PARAM_TEXT, 'tag', VALUE_REQUIRED), ''),
                 'language' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'language', VALUE_OPTIONAL), ''),
+                    new external_value(PARAM_TEXT, 'language', VALUE_REQUIRED), ''),
                 'provider' => new external_multiple_structure(
-                    new external_value(PARAM_TEXT, 'provider', VALUE_OPTIONAL), ''),
-                'keyword' => new external_value(PARAM_TEXT, 'keyword', VALUE_OPTIONAL, ''),
-                'sort' => new external_value(PARAM_TEXT, 'sort', VALUE_OPTIONAL, ''),
+                    new external_value(PARAM_TEXT, 'provider', VALUE_REQUIRED), ''),
+                'keyword' => new external_value(PARAM_TEXT, 'keyword', VALUE_REQUIRED, ''),
+                'sort' => new external_value(PARAM_TEXT, 'sort', VALUE_REQUIRED, ''),
                 'offset' => new external_value(PARAM_INT, 'offset', VALUE_DEFAULT, 0),
         ]);
     }
@@ -118,5 +118,224 @@ class mod_goone_external extends external_api {
         ]);
     }
 
+    /**
+     * Describes the parameters for get_hits
+     * @param array $type
+     * @param array $topic
+     * @param array $language
+     * @param array $provider
+     * @param string $keyword
+     * @param string $sort
+     * @param int $offset
+     * @param bool $loadmore
+     * @param int $duration
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_get_hits($type, $topic, $language, $provider, $keyword, $sort, $offset, $loadmore, $duration) {
+        $result = bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, $sort, $offset, $loadmore, $duration);
+        return [
+            'result' => $result,
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * Describes the get_hits return value
+     * @return external_single_structure
+     */
+    public static function bulk_goone_get_hits_returns() {
+        return new external_single_structure([
+                'result' => new external_value(PARAM_RAW, 'JSON response'),
+                'warnings' => new external_warnings()
+        ]);
+    }
+
+    /**
+     * Describes the parameters for get_hits
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_get_hits_parameters() {
+        return new external_function_parameters([
+                'type' => new external_multiple_structure(
+                    new external_value(PARAM_TEXT, 'type', VALUE_REQUIRED), ''),
+                'topic' => new external_multiple_structure(
+                    new external_value(PARAM_TEXT, 'topic', VALUE_REQUIRED), ''),
+                'language' => new external_multiple_structure(
+                    new external_value(PARAM_TEXT, 'language', VALUE_REQUIRED), ''),
+                'provider' => new external_multiple_structure(
+                    new external_value(PARAM_TEXT, 'provider', VALUE_REQUIRED), ''),
+                'keyword' => new external_value(PARAM_TEXT, 'keyword', VALUE_REQUIRED, ''),
+                'sort' => new external_value(PARAM_TEXT, 'sort', VALUE_REQUIRED, ''),
+                'offset' => new external_value(PARAM_INT, 'offset', VALUE_DEFAULT, 0),
+                'loadmore' => new external_value(PARAM_BOOL, 'loadmore', VALUE_DEFAULT, false),
+                'duration' => new external_multiple_structure(
+                    new external_value(PARAM_TEXT, 'duration', VALUE_REQUIRED), ''),
+        ]);
+    }
+    /**
+     * Describes the parameters for get_modal
+     * @param string $loid
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_get_modal($loid) {
+        $result = bulk_mod_goone_modal_overview($loid);
+        return [
+            'result' => $result,
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * Describes the get_modal return value
+     * @return external_single_structure
+     */
+    public static function bulk_goone_get_modal_returns() {
+        return new external_single_structure([
+                'result' => new external_value(PARAM_RAW, 'JSON response'),
+                'warnings' => new external_warnings()
+        ]);
+    }    
+
+    /**
+     * Describes the parameters for get_modal
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_get_modal_parameters() {
+        return new external_function_parameters([
+                'loid' => new external_value(PARAM_INT,
+                    'loid', VALUE_DEFAULT, 0)
+        ]);
+    }
+
+    /**
+     * Describes the parameters for get_modal
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_get_course_search_result_parameters() {
+        return new external_function_parameters([
+                'search' => new external_value(PARAM_TEXT,
+                    'search', VALUE_DEFAULT, '')
+        ]);
+    }
+
+    /**
+     * Describes the parameters for get_modal
+     * @param int $loid
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_get_course_search_result($search) {
+        $result = bulk_mod_goone_modal_search_course_result($search);
+        return [
+            'result' => $result,
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * Describes the get_modal return value
+     * @return external_single_structure
+     */
+    public static function bulk_goone_get_course_search_result_returns() {
+        return new external_single_structure([
+                'result' => new external_value(PARAM_RAW, 'JSON response'),
+                'warnings' => new external_warnings()
+        ]);
+    }
+
+
+
+    public static function bulk_goone_process_course_per_item($items) {
+        $result = bulk_mod_goone_process_course_per_item($items);   
+        return [
+            'result' => $result,
+            'warnings' => [],
+        ];  
+    }
+    /**
+     * Describes the parameters for process_course_per_item
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_process_course_per_item_parameters() {
+        return new external_function_parameters([
+                'items' => new external_value(PARAM_TEXT,
+                    'items', VALUE_DEFAULT, '')
+        ]);
+    }
+    /**
+     * Describes the process_course_per_item return value
+     * @return external_single_structure
+     */
+    public static function bulk_goone_process_course_per_item_returns() {
+            return new external_single_structure([
+                'result' => new external_value(PARAM_RAW, 'String with response'),
+                'warnings' => new external_warnings()
+        ]);
+    }
+
+    public static function bulk_goone_process_course_single_course($items, $coursename) {
+        $result = bulk_mod_goone_process_course_single_course($items, $coursename);
+        return [
+            'result' => $result,
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * Describes the parameters for process_course_single_course
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_process_course_single_course_parameters() {
+        return new external_function_parameters([
+            'items' => new external_value(PARAM_TEXT,
+                    'items', VALUE_DEFAULT, ''), 
+            'coursename'=> new external_value(PARAM_TEXT,
+                'coursename', VALUE_DEFAULT, '')
+        ]);
+    }
+    /**
+     * Describes the process_course_single_course return value
+     * @return external_single_structure
+     */
+    public static function bulk_goone_process_course_single_course_returns() {
+        return new external_single_structure([
+                'result' => new external_value(PARAM_RAW, 'String with response'),
+                'warnings' => new external_warnings()
+        ]);
+    }
+
+
+    public static function bulk_goone_process_add_to_existing_course($course_section, $selecteditemsids) {
+        $result = bulk_mod_goone_process_add_to_existing_course($course_section, $selecteditemsids);
+        return [
+            'result' => $result,
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * Describes the parameters for process_add_to_existing_course
+     * @return external_function_parameters
+     */
+    public static function bulk_goone_process_add_to_existing_course_parameters() {
+        return new external_function_parameters([
+            'course_section' => new external_value(PARAM_TEXT,
+                'course_section', VALUE_DEFAULT, ''), 
+            'selecteditemsids'=> new external_value(PARAM_TEXT,
+                'selecteditemsids', VALUE_DEFAULT, '')
+        ]);
+    }
+    /**
+     * Describes the process_add_to_existing_course return value
+     * @return external_single_structure
+     */
+    public static function bulk_goone_process_add_to_existing_course_returns() {
+        return new external_single_structure([
+                'result' => new external_value(PARAM_RAW, 'String with response'),
+                'warnings' => new external_warnings()
+        ]);
+    }
+
 
 }
+
+

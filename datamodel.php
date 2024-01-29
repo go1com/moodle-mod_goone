@@ -26,40 +26,40 @@
 require_once('../../config.php');
 require_once($CFG->dirroot.'/mod/goone/lib.php');
 
-$id = optional_param('id', '', PARAM_INT);       // Course Module ID, or
-$a = optional_param('a', '', PARAM_INT);         // scorm ID
-$scoid = required_param('scoid', PARAM_INT);  // sco ID
-$attempt = required_param('attempt', PARAM_INT);  // attempt number.
+$id = optional_param('id', '', PARAM_INT);       // The Course Module ID.
+$a = optional_param('a', '', PARAM_INT);         // The scorm ID.
+$scoid = required_param('scoid', PARAM_INT);            // The sco ID.
+$attempt = required_param('attempt', PARAM_INT);        // The attempt number.
 
 if (!empty($id)) {
     if (! $cm = get_coursemodule_from_id('goone', $id)) {
-        print_error('invalidcoursemodule');
+        throw new moodle_exception('invalidcoursemodule');
     }
     if (! $course = $DB->get_record("course", array("id" => $cm->course))) {
-        print_error('coursemisconf');
+        throw new moodle_exception('coursemisconf');
     }
     if (! $goone = $DB->get_record("goone", array("id" => $cm->instance))) {
-        print_error('invalidcoursemodule');
+        throw new moodle_exception('invalidcoursemodule');
     }
 } else if (!empty($a)) {
     if (! $goone = $DB->get_record("goone", array("id" => $a))) {
-        print_error('invalidcoursemodule');
+        throw new moodle_exception('invalidcoursemodule');
     }
     if (! $course = $DB->get_record("course", array("id" => $goone->course))) {
-        print_error('coursemisconf');
+        throw new moodle_exception('coursemisconf');
     }
     if (! $cm = get_coursemodule_from_instance("goone", $goone->id, $course->id)) {
-        print_error('invalidcoursemodule');
+        throw new moodle_exception('invalidcoursemodule');
     }
 } else {
-    print_error('missingparameter');
+    throw new moodle_exception('missingparameter');
 }
 
 $PAGE->set_url('/mod/goone/datamodel.php', array('scoid' => $scoid, 'attempt' => $attempt, 'id' => $cm->id));
 
 require_login($course, false, $cm);
 
-if (confirm_sesskey() && (!empty($scoid))) {
+if ((!empty($scoid)) && confirm_sesskey()) {
     $result = true;
     $request = null;
     foreach (data_submitted() as $element => $value) {

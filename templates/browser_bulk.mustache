@@ -1,0 +1,195 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+  GO1 Activity Module.
+
+   @package     mod_goone
+   @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
+   @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+
+<style>
+.form-inline label {
+    display:block;
+}
+.multiselect-clear-filter{
+    display: none;
+}
+.row{
+    display: flex;
+}
+.go1-provider p{
+    font-weight: 300!important;
+}
+.badge {
+    margin-left:1rem;
+    margin-right:0.5rem;
+}
+.preloader {
+    text-align: center;
+}
+.modal-body {
+    overflow:auto;
+    height:55rem;
+}
+.card-img-top {
+    width:100%;
+    margin-left: auto!important;
+    margin-right: auto!important;
+}
+#page-mod-goone-bulk .btn-group {
+    border:1px solid #8f959e;
+}
+#page-mod-goone-bulk div.modal.moodle-has-zindex.show > div > div > div.modal-body {
+    height: inherit !important;
+}
+</style>
+
+<div class="container" >
+    <h2 style="font-weight: unset;">{{# str }} pagetitle, mod_goone {{/ str }}</h2>
+    <form class="form-inline">
+        <div class="form-row w-100 mb-2">
+            <div class="form-group col-sm-12 col-lg-12">
+                <div>
+                    <label for="keyword" class="control-label ml-0">
+                    </label>
+                </div>
+                <input type="text" placeholder="{{# str }} search, moodle {{/ str }}"  class="form-control w-100" name="keyword" id="keyword"/>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-sm-6 col-md-2">
+                <label class="control-label ml-0" for="topic">
+                {{#facets}}{{#topics}}{{# str }} topics, mod_goone {{/ str }}
+                </label>
+                <div>
+                    <select name="topic" id="topic" class="form-control form-control-sm multiselect-search" multiple="multiple">
+                        {{#buckets}}<option value="{{ key }}">{{ key }}</option>{{/buckets}}
+                        {{/topics}}{{/facets}}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group col-sm-6 col-md-2">
+                <label class="control-label ml-0" for="duration">
+                    {{# str }} duration, mod_goone {{/ str }}
+                </label>
+                <div>
+                    <select name="duration" id="duration" class="form-control form-control-sm multiselect-search" multiple="multiple">
+                        <option value="1">< 15 min</option>
+                        <option value="2">15 - 30 min</option>
+                        <option value="3">30 - 60 min</option>
+                        <option value="4">> 60 min</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group col-sm-6 col-md-2">
+                <label for="provider" class="control-label ml-0">
+                {{# str }} providers, mod_goone {{/ str }}
+                </label>
+                {{#facets}}{{#instance}}
+                <div>
+                    <select name="provider" id="provider" class="form-control form-control-sm multiselect-search" multiple="multiple">
+                            {{#buckets}}
+                            <option value="{{ key }}">{{ name }}</option>
+                            {{/buckets}}
+                    </select>
+                </div>
+                {{/instance}}{{/facets}}
+            </div>
+            <div class="form-group col-sm-6 col-md-2">
+                <label class="control-label ml-0" for="type">
+                    {{# str }} contenttype, mod_goone {{/ str }}
+                </label>
+                <div>
+                    <select name="type" id="type" class="form-control form-control-sm multiselect-search" multiple="multiple">
+                        <option value="activities">Activities</option>
+                        <option value="assignment">Assignment</option>
+                        <option value="attendance">Attendance</option>
+                        <option value="award">Award</option>
+                        <option value="course">Course</option>
+                        <option value="document">Document</option>
+                        <option value="event">Event</option>
+                        <option value="h5p">H5P</option>
+                        <option value="iframe">Iframe</option>
+                        <option value="integration">Integration</option>
+                        <option value="interactive">Interactive</option>
+                        <option value="learning_pathway">Learning Pathway</option>
+                        <option value="learning_resource">Learning Resource</option>
+                        <option value="lti">LTI</option>
+                        <option value="question">Question</option>
+                        <option value="quiz">Quiz</option>
+                        <option value="resource">Resource</option>
+                        <option value="text">Text</option>
+                        <option value="video">Video</option>
+                        <option value="workshop">Workshop</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group col-sm-6 col-md-2">
+                <label class="control-label ml-0" for="language">
+                {{#facets}}{{#language}}{{# str }} language, mod_goone {{/ str }}
+                </label>
+                <div>
+                    <select name="language" id="language" class="form-control form-control-sm form-control-sm multiselect-search" multiple="multiple">
+                        {{#buckets}}<option value="{{ key }}" {{selected}}>{{ name }}</option>{{/buckets}}
+                        {{/language}}{{/facets}}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group col-sm-2 col-lg-2">
+                <div>
+                    <label class="control-label ml-0" for="sort">
+                   {{# str }} sort, mod_goone {{/ str }}
+                </label>
+            </div>
+            <select class="custom-select w-100" id="sort" name="sort">
+                    <option value="relevance">{{# str }} relevance, mod_goone {{/ str }}</option>
+                    <option value="popularity">{{# str }} popularity, mod_goone {{/ str }}</option>
+                    <option value="price">{{# str }} price, mod_goone {{/ str }}</option>
+                    <option value="title">{{# str }} title, mod_goone {{/ str }}</option>
+                    <option value="created">{{# str }} created, mod_goone {{/ str }}</option>
+                </select>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<div class="container">
+        <div id="latest-go1-result">
+            <h4 style="display:none;float:left"></h4>
+        </div>
+        <div id="goone-browser-results">
+        </div>
+
+        <div id="spinny" class="preloader w-100 text-center" style="display:block;">
+            <img src="pix/spinner.gif">
+        </div>
+        <div id="load-more-div" class="w-100 text-center my-2" style="display:none;">
+            <button id="load-more" class="btn btn-primary margin-top-5"> {{# str }} loadmore, mod_goone {{/ str }}</button>
+        </div>
+        <div id="end-of-results" class="w-100 text-center my-2" style="display:none;">
+            {{# str }} endofresults, mod_goone {{/ str }}
+        </div>
+
+{{#js}}
+M.util.js_pending('theme_boost/loader');
+require(['theme_boost/loader'], function() {
+  M.util.js_complete('theme_boost/loader');
+});
+{{/js}}
