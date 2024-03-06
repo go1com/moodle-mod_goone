@@ -52,7 +52,7 @@ class cron_task extends \core\task\scheduled_task {
                 //Get moodle course module completion record
                 $lmscompletion = $DB->get_record('course_modules_completion',
                     ['coursemoduleid'=>$gcrecord->gooneid, 'userid'=>$gcrecord->userid]);
-                if (isset($lmscompletion->completionstate) && $lmscompletion->completionstate == 0) {
+                if (!empty($lmscompletion)) {
                     //If record completed in activity talbes and not in
                     //course module completion then mark it as complete in moodle.
                     $lmscompletion->completionstate = 1;
@@ -113,10 +113,10 @@ class cron_task extends \core\task\scheduled_task {
                     //Get course module completion record, if not found
                     //will be created if found will be updated only if completionstatus not as 1 (completed).
                     $cmc = $DB->get_record('course_modules_completio', ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
-                    if (!empty($cmc) && isset($cmc->completionstate) && $cmc->completionstate <> 1) {
+                    if (!empty($cmc)) {
                         $cmc->completionstate = 1;
                         $cmc->viewed = 1;
-                        $cmc->timemodified = $hits['end_date'];
+                        $cmc->timemodified = strtotime($hits['end_date']);
                         $DB->update_record('course_modules_completion', $cmc);
                     } else {
                         $newcmc = new stdClass();
@@ -124,7 +124,7 @@ class cron_task extends \core\task\scheduled_task {
                         $newcmc->userid = $user->id;
                         $newcmc->completionstate = 1;
                         $newcmc->viewed = 1;
-                        $newcmc->timemodified = $hit['end_date'];
+                        $newcmc->timemodified = strtotime($hit['end_date']);
                         $DB->insert_record('course_modules_completion', $newcmc);
                     }
                 }
