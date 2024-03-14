@@ -77,7 +77,7 @@ class cron_task extends \core\task\scheduled_task {
                     $newcmc->completionstate = 1;
                     $newcmc->viewed = 1;
                     $newcmc->timemodified = $gcrecord->timemodified;
-                    $DB->insert_record('course_modules_completion', $lmscompletion);
+                    $DB->insert_record('course_modules_completion', $newcmc);
                 }
             }
             $status = true;
