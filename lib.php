@@ -1011,7 +1011,7 @@ function bulk_mod_goone_modal_search_course_result($stringtosearch = '') {
              $coursesections = $DB->get_records('course_sections', array('course'=>$courseobj->id));
              $la_coursesections = [];
              foreach ($coursesections as $secid => $secobj) {
-                
+
                 if (empty($secobj->name)) {
                     $secobjname = get_string('topic').' '.$secobj->section;
                 } else {
@@ -1056,7 +1056,7 @@ function bulk_mod_goone_process_course_per_item($items = '') {
                 }
             } else {
                 throw new moodle_exception('createprocesscoursefailed', 'bulk_mod_goone');
-            }       
+            }
         }
    } else {
           $la_items = explode(',', $items);
@@ -1192,7 +1192,7 @@ function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
     global $DB;
     $coursedefaults = get_config('moodlecourse');
     $data = new stdClass;
-    if (!empty($loinfo)) {    
+    if (!empty($loinfo)) {
         // Setting
         $data->category = get_config('moodle', 'defaultrequestcategory');
         $data->shortname = $loinfo['title'];
@@ -1212,7 +1212,7 @@ function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
         } else {
             $createdcourse = create_course($data);
             $imageurl = $loinfo['image'];
-            if (isset($loinfo['image']) && !empty($loinfo['image'])) {  
+            if (isset($loinfo['image']) && !empty($loinfo['image'])) {
                 $context = context_course::instance($createdcourse->id);
                 $filerecord = array(
                     'contextid' => $context->id,
@@ -1237,7 +1237,7 @@ function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
         $data->visible = $coursedefaults->visible;
         $data->startdate = time();
         $createdcourse = create_course($data);
-        return $createdcourse; 
+        return $createdcourse;
     }
 }
 /**
@@ -1247,7 +1247,7 @@ function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
  * @param string $course created course or course to update
  * @return object $cminfo course module info
  */
-function bulk_mod_goone_create_assign_module($loinfo, $course, $topic = 0) { 
+function bulk_mod_goone_create_assign_module($loinfo, $course, $topic = 0) {
     global $DB;
     $cminfo = new stdClass;
     $cminfo->name = $loinfo['title'];
@@ -1323,12 +1323,12 @@ function bulk_mod_goone_api_custom_api_request($endpoint_method = "" , $value_id
 function bulk_mod_goone_create_api_secret_key($n = 12) {
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*(){}[]_+-';
     $randsecret = '';
- 
+
     for ($i = 0; $i < $n; $i++) {
         $index = rand(0, strlen($characters) - 1);
         $randsecret .= $characters[$index];
     }
- 
+
     return $randsecret;
 }
 
@@ -1389,7 +1389,7 @@ function mod_goone_api_payload_process_post() {
 
     $request = file_get_contents('php://input');
 
-    $la_postjson = json_decode($request, true);  
+    $la_postjson = json_decode($request, true);
     $signature = array();
 
     $la_signature = explode(',', $_SERVER['HTTP_GO1_SIGNATURE']);
@@ -1407,9 +1407,12 @@ function mod_goone_api_payload_process_post() {
 
             $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
             $enrolleduserinfo = bulk_mod_goone_api_custom_api_request('users', $enrolinfo['user_id']);
-            //Search user by email or firstname and lastname 
+            //Search user by email or firstname and lastname.
             if (!$user = $DB->get_record('user', array('email'=>$enrolleduserinfo['email']))) {
                 $user = $DB->get_record('user', array('firstname'=>$enrolleduserinfo['first_name'], 'lastname'=>$enrolleduserinfo['last_name']));
+                if (!$user) {
+                    $user = $DB->get_record_sql('SELECT * FROM {user} WHERE CONCAT(firstname, " ", lastname) = "'.$enrolleduserinfo['first_name']." ".$enrolleduserinfo['last_name'].'"');
+                }
             }
             if ($user) {
                 $activities = $DB->get_records('goone', array('loid'=>$la_postjson['data']['lo_id']));
@@ -1457,9 +1460,12 @@ function mod_goone_api_payload_process_post() {
         $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
         $enrolleduserinfo = bulk_mod_goone_api_custom_api_request('users', $enrolinfo['user_id']);
 
-        //Search user by email or firstname and lastname 
+        //Search user by email or firstname and lastname.
         if (!$user = $DB->get_record('user', array('email'=>$enrolleduserinfo['email']))) {
             $user = $DB->get_record('user', array('firstname'=>$enrolleduserinfo['first_name'], 'lastname'=>$enrolleduserinfo['last_name']));
+            if (!$user) {
+             $user = $DB->get_record_sql('SELECT * FROM {user} WHERE CONCAT(firstname, " ", lastname) = '.$enrolleduserinfo['first_name'].' '.$enrolleduserinfo['last_name']);
+            }
         }
         if ($user) {
             $activities = $DB->get_records('goone', array('loid'=>$la_postjson['data']['lo_id']));
@@ -1562,7 +1568,7 @@ function mod_goone_create_webhook_api_request() {
         $context = context_system::instance();
         $PAGE->set_context($context);
         $PAGE->set_pagelayout('admin');
-        $PAGE->set_url('/mod/goone/payload.php?logs_view=1');
+        $PAGE->set_url('/mod/goone/payload.php?create_webhook=1');
         $PAGE->set_title(get_string('logs_webhook', 'mod_goone'));
         $PAGE->set_heading(get_string('logs_webhook', 'mod_goone'));
         echo $OUTPUT->header();
