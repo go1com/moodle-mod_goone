@@ -27,7 +27,7 @@ require_once($CFG->dirroot.'/mod/goone/lib.php');
  * @copyright 2024 Esteban Echavarria (esteban.echavarria@openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class cron_task extends \core\task\scheduled_task {
+class check_mark_completion extends \core\task\scheduled_task {
     /**
      * Get a descriptive name for this task (shown to admins).
      *
@@ -45,39 +45,82 @@ class cron_task extends \core\task\scheduled_task {
 
         //Local internal completion checks.
         try {
-            // Get comletions from activity table
+            // Get comletions from activity table.
             $goonecompletions = $DB->get_records('goone_completion', ['completed'=>2]);
 
             foreach ($goonecompletions as $gcid => $gcrecord) {
-                //Get moodle course module completion record
+                //Get moodle course module completion record.
+                $module = $DB->get_record('modules', ['name'=>'goone']);
+                    $gooneactivity = $DB->get_record('goone', ['id'=>$gcrecord->gooneid]);
+                    $cm = $DB->get_record('course_modules', ['module'=>$module->id,
+                        'course'=>$gooneactivity->course, 'instance'=>$gcrecord->instance]);
                 $lmscompletion = $DB->get_record('course_modules_completion',
-                    ['coursemoduleid'=>$gcrecord->gooneid, 'userid'=>$gcrecord->userid]);
+                    ['coursemoduleid'=>$cm->id, 'userid'=>$gcrecord->userid]);
                 if (!empty($lmscompletion)) {
-                    //If record completed in activity talbes and not in
+                    //If record completed in activity tables and not in
                     //course module completion then mark it as complete in moodle.
-                    $lmscompletion->completionstate = 1;
-                    $lmscompletion->viewed = 1;
-                    if (isset($gcrecord->timemodified) && $gcrecord->timemodified > 0) {
-                        //Set timemodified from goone completion table.
-                        $lmscompletion->timemodified = $gcrecord->timemodified;
-                    } else {
-                        //Set timemodified as current timestamp as correct timemodified date not found.
-                        $lmscompletion->timemodified = time();
+                    if(isset($lmscompletion->completionstate) && $lmscompletion->completionstate <> 1){
+                        $lmscompletion->completionstate = 1;
+                        if (isset($gcrecord->timemodified) && $gcrecord->timemodified > 0) {
+                            //Set timemodified from goone completion table.
+                            $lmscompletion->timemodified = $gcrecord->timemodified;
+                        } else {
+                            //Set timemodified as current timestamp as correct timemodified date not found.
+                            $lmscompletion->timemodified = time();
+                        }
+                        $DB->update_record('course_modules_completion', $lmscompletion);
+                        goone_set_completion($cm, $gcrecord->userid, '', "completed");
                     }
-                    $DB->update_record('course_modules_completion', $lmscompletion);
+
+                    //Check viewed and mark it.
+                    $lmsviewed = $DB->get_record('course_modules_viewed',
+                    ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
+                    if (empty($lmsviewed)) {
+                        $newviewed = new \stdClass();
+                        if (isset($gcrecord->timemodified) && $gcrecord->timemodified > 0) {
+                            //Set timemodified from goone completion table.
+                            $newviewed->timecreated = $gcrecord->timemodified;
+                        } else {
+                            //Set timemodified as current timestamp as correct timemodified date not found.
+                            $newviewed->timecreated = time();
+                        }
+                        $newviewed->timecreated = time();
+                        $newviewed->coursemoduleid = $cm->id;
+                        $newviewed->userid = $user->id;
+                        $DB->insert_record('course_modules_viewed', $newviewed);
+                    }
+
                 } else {
+                    //Check viewed and mark it.
+                    $lmsviewed = $DB->get_record('course_modules_viewed',
+                    ['coursemoduleid'=>$cm->id, 'userid'=>$gcrecord->userid]);
+                    if (empty($lmsviewed)) {
+                        $newviewed = new \stdClass();
+                        if (isset($gcrecord->timemodified) && $gcrecord->timemodified > 0) {
+                            //Set timemodified from goone completion table.
+                            $lmsviewed->timecreated = $gcrecord->timemodified;
+                        } else {
+                            //Set timemodified as current timestamp as correct timemodified date not found.
+                            $lmsviewed->timecreated = time();
+                        }
+                        $newviewed->timecreated = time();
+                        $newviewed->coursemoduleid = $cm->id;
+                        $newviewed->userid = $gcrecord->userid;
+                        $DB->insert_record('course_modules_viewed', $lmsviewed);
+                        goone_set_completion($cm, $gcrecord->userid, '', "completed");
+                    }
+
                     // Insert the course completion record.
                     $module = $DB->get_record('modules', ['name'=>'goone']);
                     $gooneactivity = $DB->get_record('goone', ['id'=>$gcrecord->gooneid]);
                     $cm = $DB->get_record('course_modules', ['module'=>$module->id,
                         'course'=>$gooneactivity->course, 'instance'=>$gcrecord->instance]);
-                    $newcmc = new stdClass();
+                    $newcmc = new \stdClass();
                     $newcmc->coursemoduleid = $cm->id;
                     $newcmc->userid = $gcrecord->userid;
                     $newcmc->completionstate = 1;
-                    $newcmc->viewed = 1;
                     $newcmc->timemodified = $gcrecord->timemodified;
-                    $DB->insert_record('course_modules_completion', $newcmc);
+                    $DB->insert_record('course_modules_completion', $lmscompletion);
                 }
             }
             $status = true;
@@ -112,20 +155,42 @@ class cron_task extends \core\task\scheduled_task {
                     }
                     //Get course module completion record, if not found
                     //will be created if found will be updated only if completionstatus not as 1 (completed).
-                    $cmc = $DB->get_record('course_modules_completio', ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
+                    $cmc = $DB->get_record('course_modules_completion', ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
                     if (!empty($cmc)) {
-                        $cmc->completionstate = 1;
-                        $cmc->viewed = 1;
-                        $cmc->timemodified = strtotime($hits['end_date']);
-                        $DB->update_record('course_modules_completion', $cmc);
+                        if (isset($cmc->completionstate) && $cmc->completionstate <> 1) {
+                            $cmc->completionstate = 1;
+                            $cmc->timemodified = strtotime($hits['end_date']);
+                            $DB->update_record('course_modules_completion', $cmc);
+                            goone_set_completion($cm, $user->id, '', "completed");
+                        }
+                        //Check viewed and mark it.
+                        $lmsviewed = $DB->get_record('course_modules_viewed',
+                        ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
+                        if (empty($lmsviewed)) {
+                            $newviewed = new \stdClass();
+                            $newviewed->timecreated = time();
+                            $newviewed->coursemoduleid = $cm->id;
+                            $newviewed->userid = $user->id;
+                            $DB->insert_record('course_modules_viewed', $newviewed);
+                        }
                     } else {
-                        $newcmc = new stdClass();
+                        $newcmc = new \stdClass();
                         $newcmc->coursemoduleid = $cm->id;
                         $newcmc->userid = $user->id;
                         $newcmc->completionstate = 1;
-                        $newcmc->viewed = 1;
                         $newcmc->timemodified = strtotime($hit['end_date']);
                         $DB->insert_record('course_modules_completion', $newcmc);
+                        goone_set_completion($cm, $user->id, '', "completed");
+                        //Check viewed and mark it.
+                        $lmsviewed = $DB->get_record('course_modules_viewed',
+                        ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
+                        if (empty($lmsviewed)) {
+                            $newviewed = new \stdClass();
+                            $newviewed->timecreated = time();
+                            $newviewed->coursemoduleid = $cm->id;
+                            $newviewed->userid = $user->id;
+                            $DB->insert_record('course_modules_viewed', $newviewed);
+                        }
                     }
                 }
             }
