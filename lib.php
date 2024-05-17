@@ -1424,20 +1424,41 @@ function mod_goone_api_payload_process_post() {
                             if ($cmc->completionstate == 0 && ($enrolinfo['pass'] == true || $enrolinfo['pass'] == 1)) {
                                 $cmc->timemodified = $enrolinfo['timestamp'];
                                 $cmc->completionstate = 1;
-                                $cmc->viewed = 1;
+                                //$cmc->viewed = 1;
                                 $DB->update_record('course_modules_completion', $cmc);
                                 goone_set_completion($cm, $user->id, '', "completed");
+                                //Check viewed and mark it.
+                                $lmsviewed = $DB->get_record('course_modules_viewed',
+                                ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
+                                if (empty($lmsviewed)) {
+                                    $newviewed = new \stdClass();
+                                    $newviewed->timecreated = time();
+                                    $newviewed->coursemoduleid = $cm->id;
+                                    $newviewed->userid = $user->id;
+                                    $DB->insert_record('course_modules_viewed', $newviewed);
+                                }
                             }
                         } else if(($enrolinfo['pass'] == true || $enrolinfo['pass'] == 1)) {
                             $newcmc = new stdClass();
                             $newcmc->coursemoduleid = $cm->id;
                             $newcmc->userid = $user->id;
                             $newcmc->completionstate = 1;
-                            $newcmc->viewed = 1;
+                            //$newcmc->viewed = 1;
                             $newcmc->timemodified = $enrolinfo['timestamp'];
                             $DB->insert_record('course_modules_completion', $newcmc);
                             goone_set_completion($cm, $user->id, '', "completed");
+                            //Check viewed and mark it.
+                            $lmsviewed = $DB->get_record('course_modules_viewed',
+                            ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
+                            if (empty($lmsviewed)) {
+                                $newviewed = new \stdClass();
+                                $newviewed->timecreated = time();
+                                $newviewed->coursemoduleid = $cm->id;
+                                $newviewed->userid = $user->id;
+                                $DB->insert_record('course_modules_viewed', $newviewed);
+                            }
                         }
+
                     }
                 }else{
                     $logobj->message_info = get_string('activitynotfound', 'mod_goone')."\n\n".$request;
