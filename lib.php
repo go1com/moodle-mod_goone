@@ -1407,11 +1407,22 @@ function mod_goone_api_payload_process_post() {
 
             $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
             $enrolleduserinfo = bulk_mod_goone_api_custom_api_request('users', $enrolinfo['user_id']);
-            //Search user by email or firstname and lastname.
+            $userinfofromgo = bulk_mod_goone_api_custom_api_request('user-accounts', $enrolinfo['user_id']);
+
+            //Search user by email, firstname and lastname and username (external_user_id).
             if (!$user = $DB->get_record('user', array('email'=>$enrolleduserinfo['email']))) {
                 $user = $DB->get_record('user', array('firstname'=>$enrolleduserinfo['first_name'], 'lastname'=>$enrolleduserinfo['last_name']));
                 if (!$user) {
                     $user = $DB->get_record_sql('SELECT * FROM {user} WHERE CONCAT(firstname, " ", lastname) = "'.$enrolleduserinfo['first_name']." ".$enrolleduserinfo['last_name'].'"');
+                }
+
+                if (!$user) {
+                    //Search users by external id which is username
+                    if (!empty($userinfofromgo)) {
+                        if (isset($userinfofromgo['standard_fields']['external_user_id'])) {
+                            $user = $DB->get_record('user', array('username'=>$userinfofromgo['standard_fields']['external_user_id'])); 
+                        }
+                    }   
                 }
             }
             if ($user) {
