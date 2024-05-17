@@ -144,13 +144,25 @@ class check_mark_completion extends \core\task\scheduled_task {
                 foreach ($goonecompletedenrollments['hits'] as $index => $hit) {
                     //Get user details from goone.
                     $enrolleduserinfo = bulk_mod_goone_api_custom_api_request('users', $hit['user_id']);
+                    $userinfofromgo = bulk_mod_goone_api_custom_api_request('user-accounts', $enrolinfo['user_id']);
+
+                    //Search user by email, firstname and lastname and username (external_user_id).
                     if (!$user = $DB->get_record('user', array('email'=>$enrolleduserinfo['email']))) {
                         $user = $DB->get_record('user', array('firstname'=>$enrolleduserinfo['first_name'], 'lastname'=>$enrolleduserinfo['last_name']));
                         if (!$user) {
                             $user = $DB->get_record_sql('SELECT * FROM {user} WHERE CONCAT(firstname, " ", lastname) = "'.$enrolleduserinfo['first_name']." ".$enrolleduserinfo['last_name'].'"');
-                            if (!$user) {
-                                continue;
-                            }
+                        }
+
+                        if (!$user) {
+                            //Search users by external id which is username
+                            if (!empty($userinfofromgo)) {
+                                if (isset($userinfofromgo['standard_fields']['external_user_id'])) {
+                                    $user = $DB->get_record('user', array('username'=>$userinfofromgo['standard_fields']['external_user_id'])); 
+                                }
+                            }   
+                        }
+                        if (!$user) {
+                            continue;
                         }
                     }
                     //Get course module completion record, if not found
