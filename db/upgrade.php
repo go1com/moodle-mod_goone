@@ -46,25 +46,51 @@ function xmldb_goone_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2020082900, 'goone');
     }
 
-    if( $oldversion < 2022102000){      
-        // Loads ddl manager and xmldb classes.
-        $dbman = $DB->get_manager(); 
+    if( $oldversion < 2022102000) {
 
-        // Define table mod_goone_webhook_logs to be created.
-        $table = new xmldb_table('mod_goone_webhook_logs');
+        // Define table goone_webhook_logs to be created.
+        $table = new xmldb_table('goone_webhook_logs');
 
-        // Adding fields to table mod_goone_webhook_logs.
+        // Adding fields to table goone_webhook_logs.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('message_info', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
 
-        // Adding keys to table mod_goone_webhook_logs.
+        // Adding keys to table goone_webhook_logs.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
 
-        // Conditionally launch create table for mod_goone_webhook_logs.
+        // Conditionally launch create table for goone_webhook_logs.
         if (!$dbman->table_exists($table)) {
             $dbman->create_table($table);
         }
+        upgrade_mod_savepoint(true, 2022102000, 'goone');
     }
+
+    if( $oldversion < 2024112000) {
+        // Rename log table for consistency.
+        $table = new xmldb_table('mod_goone_webhook_logs');
+        if ($dbman->table_exists($table)) {
+            $dbman->rename_table($table, 'goone_webhook_logs');
+        }
+
+        // Add user mapping table (performance).
+        $table = new xmldb_table('goone_usermap');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10');
+        $table->add_field('gooneuserid', XMLDB_TYPE_INTEGER, '10');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        // Add primary key.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        // Add indexes.
+        $table->add_index('ix_userid', XMLDB_INDEX_NOTUNIQUE, array('userid'));
+        $table->add_index('ix_gooneuserid', XMLDB_INDEX_NOTUNIQUE, array('gooneuserid'));
+        // Add table.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2024112000, 'goone');
+    }
+
     return true;
 }

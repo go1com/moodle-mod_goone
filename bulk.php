@@ -43,7 +43,7 @@ $PAGE->set_heading(get_string('contentbank', 'mod_goone'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/mod/goone/css/bootstrap-multiselect.css'));
 $PAGE->requires->js_call_amd('mod_goone/browser_bulk', 'init');
 $PAGE->requires->strings_for_js(
-    array('createcoursemodaltitle', 'searchcoursemodaltitle', 'noitemsselected', 'topics', 'language', 'type', 'providers', 'duration', 'coursename', 'coursenameempty', 'processingitems', 'toomanyitems', 'contenttype')
+    array('createcoursemodaltitle', 'searchcoursemodaltitle', 'noitemsselected', 'notopicselected', 'topics', 'language', 'type', 'providers', 'duration', 'coursename', 'coursenameempty', 'processingitems', 'toomanyitems', 'contenttype')
     , 'mod_goone');
 $PAGE->requires->strings_for_js(array('create', 'save'), 'moodle');
 echo $OUTPUT->header();

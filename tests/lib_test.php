@@ -154,6 +154,6 @@ class mod_goone_lib_testcase extends advanced_testcase {
         $cm = get_coursemodule_from_id('goone', $goone->cmid, 0, true, MUST_EXIST);
         $info = goone_get_coursemodule_info($cm);
         $this->assertEquals($info->name, $goone->name);
-        $this->assertObjectHasAttribute( 'customdata', $info);
+        $this->assertObjectHasProperty( 'customdata', $info);
     }
 }

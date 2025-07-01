@@ -67,7 +67,7 @@ if ($newwin == 1) {
     $PAGE->set_pagelayout('embedded');
 }
 $isnewwin = $DB->get_field('goone', 'popup', array('id' => $goone->id));
-if ($isnewwin == 1 && $newwin == 0) {
+if ($isnewwin && !$newwin) {
     echo $OUTPUT->header();
     echo get_string('opennewwin', 'goone');
     $urltogo = new moodle_url('/mod/goone/view.php', array('id' => $cm->id));

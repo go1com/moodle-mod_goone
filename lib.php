@@ -224,7 +224,7 @@ function notify_completion($obj) {
     $completion = new completion_info($course);
 
     if ($completion->is_enabled($cm) && $goone->completionsubmit) {
-        $b = $completion->update_state($cm, COMPLETION_COMPLETE, $USER->id);
+        $completion->update_state($cm, COMPLETION_COMPLETE, $USER->id);
     }
 }
 
@@ -308,9 +308,11 @@ function goone_generatetoken() {
     $curlinfo = $curl->get_info();
     if ($curlinfo['http_code'] == 200 && isset($curloutput['access_token'])) {
         set_config('token', $curloutput['access_token'], 'mod_goone');
+        set_config('token_time', time(), 'mod_goone');
         return true;
     } else {
         set_config('token', '', 'mod_goone');
+        set_config('token_time', 0, 'mod_goone');
         return false;
     }
 }
@@ -321,9 +323,20 @@ function goone_generatetoken() {
  * @return bool
  */
 function goone_tokentest() {
-    global $CFG, $DB;
 
     $config = get_config('mod_goone');
+    // Check if token has expired.
+    if (empty($config->token_time)) {
+        return goone_generatetoken();
+    } else {
+        // Token expires in 12 hours.
+        $token_age = time() - $config->token_time;
+        $max_age = 43195; // 11:59:55
+        if ($token_age < $max_age) {
+            return true;
+        }
+    }
+
     if (empty($config->client_id) || empty($config->client_secret)) {
         set_config('token', '', 'mod_goone');
         return false;
@@ -509,33 +522,28 @@ function goone_set_completion($cm, $userid, $location, $type) {
     $gcomp->userid = $userid;
     $gcomp->gooneid = $cm->instance;
     $gcomp->position = $location;
+    $gcomp->completed = ($type == "completed") ? 2 : 1;
     $gcomp->timemodified = time();
     $compstate = $DB->get_record(
         'goone_completion', array('gooneid' => $cm->instance, 'userid' => $userid), 'id,completed', $strictness = IGNORE_MISSING
     );
 
-    if ($type == "completed" || (!empty($compstate) && $compstate->completed == 2 )) {
+    if ($compstate) {
+        $gcomp->id = $compstate->id;
+        $DB->update_record('goone_completion', $gcomp);
+    } else {
+        $DB->insert_record('goone_completion', $gcomp);
+    }
+
+    if ($type == "completed") {
         $gcomp->completed = 2;
         $course = new stdClass();
         $course->id = $cm->course;
         $completion = new completion_info($course);
-        if ($completion->is_enabled($cm)) {
-            $completion->update_state($cm, COMPLETION_COMPLETE, $userid);
-        }
+        $completion->update_state($cm, COMPLETION_COMPLETE, $userid);
     }
-    if ($type == "inprogress") {
-        $gcomp->position = $location;
-        $gcomp->completed = 1;
-    }
-    if ($compstate) {
-        $gcomp->id = $compstate->id;
-        $DB->update_record('goone_completion', $gcomp);
-        return true;
-    } else {
-        $DB->insert_record('goone_completion', $gcomp);
-        return true;
-    }
-    return false;
+
+    return true;
 }
 
 /**
@@ -697,7 +705,7 @@ function goone_get_facets() {
  * @param string $lang
  * @return string
  */
-function goone_get_lang($lang = null) {
+function goone_get_lang($lang = '') {
     $languages = get_string_manager()->get_list_of_languages();
     if (array_key_exists($lang, $languages)) {
         return $languages[$lang];
@@ -808,6 +816,81 @@ function goone_signup_url() {
     $url = 'https://auth.GO1.com/oauth/authorize?client_id=Moodle&response_type=code&redirect=false&redirect_uri='
         .$CFG->wwwroot.'&new_client=Moodle'.$partnerurl;
     return $url;
+}
+
+
+/**
+ * Get Moodle user by GO1 userid.
+ *
+ * @param int $gooneuserid
+ * @return mixed stdclass|bool DB record object from {user} table or false
+ */
+function goone_get_moodle_user($gooneuserid) {
+    global $DB;
+
+    // API V3
+    // $userinfofromgo = bulk_mod_goone_apiv3_custom_api_request('user-accounts', $gooneuserid);
+
+    $DB->execute("DELETE FROM {goone_usermap} WHERE userid IS NULL");
+
+    if ($row = $DB->get_record('goone_usermap', ['gooneuserid' => $gooneuserid])) {
+        $user = $DB->get_record('user', ['id' => $row->userid]);
+        return $user;
+    }
+
+    // API V2
+    $userinfofromgo = bulk_mod_goone_api_custom_api_request('users', $gooneuserid);
+    $email = $userinfofromgo['email'];
+    $firstname = $userinfofromgo['first_name'];
+    $lastname = $userinfofromgo['last_name'];
+    $username = (isset($userinfofromgo['custom_fields']['external_user_id'])) ? $userinfofromgo['custom_fields']['external_user_id'] : '';
+
+    if (!empty($username)) {
+        $user = $DB->get_record('user', array('username' => $username));
+    }
+
+    // Try email as-is.
+    if (empty($user)) {
+        $user = $DB->get_record('user', array('email' => $email));
+    }
+
+    if (empty($user)) {
+        $user = $DB->get_record('user', array('username' => $email));
+    }
+
+    // Try email from external_user_id.
+    if (empty($user) && !empty($username)) {
+        $user = $DB->get_record('user', array('email' => $username));
+    }
+
+    // Try the user part of the email as username.
+    if (empty($user)) {
+        $regexp = '/([^@]+)@.*/i';
+        $username = preg_match($regexp, $email, $p);
+        if (!empty($p[1])) {
+            $user = $DB->get_record('user', array('username' => $username));
+        }
+    }
+
+    // Try firstname and lastname as last resort, but proceed only if one match.
+    if (empty($user)) {
+        $users = $DB->get_records('user', array('firstname' => $firstname, 'lastname' => $lastname));
+        if (sizeof($users) == 1) {
+            reset($users);
+            $user = current($users);
+        }
+    }
+
+    if ($user) {
+        $r = new \stdClass();
+        $r->gooneuserid = $gooneuserid;
+        $r->timecreated = time();
+        $r->userid = $user->id;
+        $DB->insert_record('goone_usermap', $r);
+        return $user;
+    } else {
+        return false;
+    }
 }
 
 
@@ -1244,7 +1327,7 @@ function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
  * Method to add activity to course
  *
  * @param string $loinfo Learning Object info fetch from GO1 API
- * @param string $course created course or course to update
+ * @param $course created course or course to update
  * @return object $cminfo course module info
  */
 function bulk_mod_goone_create_assign_module($loinfo, $course, $topic = 0) {
@@ -1283,10 +1366,6 @@ function bulk_mod_goone_create_assign_module($loinfo, $course, $topic = 0) {
 
 /**
  * Method to get info from GO1 API with different methods 
- *
- * @param string $loinfo Learning Object info fetch from GO1 API
- * @param string $course created course or course to update
- * @return object $cminfo course module info
  */
 function bulk_mod_goone_api_custom_api_request($endpoint_method = "" , $value_id = "", $params = null) {
     global $DB;
@@ -1307,12 +1386,51 @@ function bulk_mod_goone_api_custom_api_request($endpoint_method = "" , $value_id
         $result = @json_decode($curl->get($serverurl), true);
     }
     if ($curl->get_info()['http_code'] == 404) {
+        $logobj = new \stdClass();
         $logobj->message_info = $endpoint_method.' '.get_string('recordrequestednotfound', 'mod_goone')."\n\n".$value_id;
         $logobj->timecreated = time();
-        $DB->insert_record('mod_goone_webhook_logs', $logobj);
+        $DB->insert_record('goone_webhook_logs', $logobj);
     }
     return $result;
 }
+
+
+/**
+ * Method to get info from GO1 API V3 with different methods
+ *
+ */
+function bulk_mod_goone_apiv3_custom_api_request($endpoint, $value_id = "", $method = 'get', $params = null) {
+    global $DB;
+    // define api url call
+    $curl = new curl();
+    $serverurl = "https://gateway.go1.com/".$endpoint;
+    if (!empty($value_id)) {
+        $serverurl .= "/{$value_id}";
+    }
+
+    goone_tokentest();
+    $header = array (
+        "Authorization: Bearer ".get_config('mod_goone', 'token'),
+        "Api-Version: Alpha"
+    );
+    $curl->setHeader($header);
+    if (!empty($params)) {
+        $result = @json_decode($curl->$method($serverurl, $params), true);
+    } else {
+        $result = @json_decode($curl->$method($serverurl), true);
+    }
+
+    if ($curl->get_info()['http_code'] == 404) {
+        $logobj = new \stdClass();
+        $logobj->message_info = $endpoint.' '.get_string('recordrequestednotfound', 'mod_goone')."\n\n".$value_id;
+        $logobj->timecreated = time();
+        $DB->insert_record('goone_webhook_logs', $logobj);
+    }
+    return $result;
+}
+
+
+
 /**
  * Method to generate a random string to be use a secret to sing the API calls 
  *
@@ -1371,7 +1489,7 @@ function mod_goone_view_api_payload_logs() {
     $PAGE->set_title(get_string('logs_webhook', 'mod_goone'));
     $PAGE->set_heading(get_string('logs_webhook', 'mod_goone'));
     echo $OUTPUT->header();
-        $sqllogs = $DB->get_records_sql('SELECT * FROM {mod_goone_webhook_logs} ORDER BY timecreated DESC');
+        $sqllogs = $DB->get_records_sql('SELECT * FROM {goone_webhook_logs} ORDER BY timecreated DESC');
         $table = new html_table();
         $table->head = array('Id', 'message_info', 'Timestamp');
         foreach ($sqllogs as $id => $record) {
@@ -1389,6 +1507,13 @@ function mod_goone_api_payload_process_post() {
 
     $request = file_get_contents('php://input');
 
+    $api_secret = get_config('mod_goone', 'goone_api_secret');
+    if (empty($api_secret)) {
+        $logobj->message_info = get_string('signaturenotconfig', 'mod_goone')."\n\n".$request;
+        $logobj->timecreated = time();
+        $DB->insert_record('goone_webhook_logs', $logobj);
+    }
+
     $la_postjson = json_decode($request, true);
     $signature = array();
 
@@ -1400,149 +1525,89 @@ function mod_goone_api_payload_process_post() {
 
     $timestamp = $signature[0];
     $stringposttimestamp = (string) $timestamp.".".$request;
-    $calculatedSignature = hash_hmac('sha256', $stringposttimestamp, get_config('mod_goone', 'goone_api_secret'));
+    $calculatedSignature = hash_hmac('sha256', $stringposttimestamp, $api_secret);
 
-    if(isset($signature[1]) && !empty(get_config('mod_goone', 'goone_api_secret'))) {
+    if (isset($signature[1])) {
         if ($calculatedSignature == $signature[1]) {
-
-            $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
-            $enrolleduserinfo = bulk_mod_goone_api_custom_api_request('users', $enrolinfo['user_id']);
-            $userinfofromgo = bulk_mod_goone_api_custom_api_request('user-accounts', $enrolinfo['user_id']);
-
-            //Search user by email, firstname and lastname and username (external_user_id).
-            if (!$user = $DB->get_record('user', array('email'=>$enrolleduserinfo['email']))) {
-                $user = $DB->get_record('user', array('firstname'=>$enrolleduserinfo['first_name'], 'lastname'=>$enrolleduserinfo['last_name']));
-                if (!$user) {
-                    $user = $DB->get_record_sql('SELECT * FROM {user} WHERE CONCAT(firstname, " ", lastname) = "'.$enrolleduserinfo['first_name']." ".$enrolleduserinfo['last_name'].'"');
-                }
-
-                if (!$user) {
-                    //Search users by external id which is username
-                    if (!empty($userinfofromgo)) {
-                        if (isset($userinfofromgo['standard_fields']['external_user_id'])) {
-                            $user = $DB->get_record('user', array('username'=>$userinfofromgo['standard_fields']['external_user_id'])); 
-                        }
-                    }   
-                }
-            }
-            if ($user) {
-                $activities = $DB->get_records('goone', array('loid'=>$la_postjson['data']['lo_id']));
-                $mod = $DB->get_record('modules', array('name'=>'goone'));
-                if (!empty($activities)) {
-                    foreach ($activities as $id => $activity) {
-                        $cm = $DB->get_record('course_modules', array('course'=>$activity->course, 'module'=>$mod->id, 'instance'=>$activity->id));
-                        if ($cmc = $DB->get_record('course_modules_completion', array('coursemoduleid'=>$cm->id, 'userid'=>$user->id))) {
-                            if ($cmc->completionstate == 0 && ($enrolinfo['pass'] == true || $enrolinfo['pass'] == 1)) {
-                                $cmc->timemodified = $enrolinfo['timestamp'];
-                                $cmc->completionstate = 1;
-                                //$cmc->viewed = 1;
-                                $DB->update_record('course_modules_completion', $cmc);
-                                goone_set_completion($cm, $user->id, '', "completed");
-                                //Check viewed and mark it.
-                                $lmsviewed = $DB->get_record('course_modules_viewed',
-                                ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
-                                if (empty($lmsviewed)) {
-                                    $newviewed = new \stdClass();
-                                    $newviewed->timecreated = time();
-                                    $newviewed->coursemoduleid = $cm->id;
-                                    $newviewed->userid = $user->id;
-                                    $DB->insert_record('course_modules_viewed', $newviewed);
-                                }
-                            }
-                        } else if(($enrolinfo['pass'] == true || $enrolinfo['pass'] == 1)) {
-                            $newcmc = new stdClass();
-                            $newcmc->coursemoduleid = $cm->id;
-                            $newcmc->userid = $user->id;
-                            $newcmc->completionstate = 1;
-                            //$newcmc->viewed = 1;
-                            $newcmc->timemodified = $enrolinfo['timestamp'];
-                            $DB->insert_record('course_modules_completion', $newcmc);
-                            goone_set_completion($cm, $user->id, '', "completed");
-                            //Check viewed and mark it.
-                            $lmsviewed = $DB->get_record('course_modules_viewed',
-                            ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
-                            if (empty($lmsviewed)) {
-                                $newviewed = new \stdClass();
-                                $newviewed->timecreated = time();
-                                $newviewed->coursemoduleid = $cm->id;
-                                $newviewed->userid = $user->id;
-                                $DB->insert_record('course_modules_viewed', $newviewed);
-                            }
-                        }
-
-                    }
-                }else{
-                    $logobj->message_info = get_string('activitynotfound', 'mod_goone')."\n\n".$request;
-                    $logobj->timecreated = time() ;
-                    $DB->insert_record('mod_goone_webhook_logs', $logobj);
-                }
-            } else {
-                $logobj->message_info = get_string('usernotfound', 'mod_goone')."\n\n".$request;
-                $logobj->timecreated = time();
-                $DB->insert_record('mod_goone_webhook_logs', $logobj);
-            }
-
+            mod_goone_api_payload_process_post_request($la_postjson, $request);
         } else {
             $logobj->message_info = get_string('signaturenotmatching', 'mod_goone')."\n\n".$request;
             $logobj->timecreated = time();
-            $DB->insert_record('mod_goone_webhook_logs', $logobj);
+            $DB->insert_record('goone_webhook_logs', $logobj);
         }
-    } else if (!isset($signature[1]) && empty(get_config('mod_goone', 'goone_api_secret'))) {
+    }  else {
+        $logobj->message_info = get_string('signaturenotset', 'mod_goone')."\n\n".$request;
+        $logobj->timecreated = time();
+        $DB->insert_record('goone_webhook_logs', $logobj);
+    }
+}
 
-        $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
-        $enrolleduserinfo = bulk_mod_goone_api_custom_api_request('users', $enrolinfo['user_id']);
 
-        //Search user by email or firstname and lastname.
-        if (!$user = $DB->get_record('user', array('email'=>$enrolleduserinfo['email']))) {
-            $user = $DB->get_record('user', array('firstname'=>$enrolleduserinfo['first_name'], 'lastname'=>$enrolleduserinfo['last_name']));
-            if (!$user) {
-             $user = $DB->get_record_sql('SELECT * FROM {user} WHERE CONCAT(firstname, " ", lastname) = '.$enrolleduserinfo['first_name'].' '.$enrolleduserinfo['last_name']);
-            }
-        }
-        if ($user) {
-            $activities = $DB->get_records('goone', array('loid'=>$la_postjson['data']['lo_id']));
-            $mod = $DB->get_record('modules', array('name'=>'goone'));
-            if (!empty($activities)) {
-                foreach ($activities as $id => $activity) {
-                    $cm = $DB->get_record('course_modules', array('course'=>$activity->course, 'module'=>$mod->id, 'instance'=>$activity->id));
-                    if ($cmc = $DB->get_record('course_modules_completion', array('coursemoduleid'=>$cm->id, 'userid'=>$user->id))) {
-                        if ($cmc->completionstate == 0 && ($enrolinfo['pass'] == true || $enrolinfo['pass'] == 1 )) {
-                            $cmc->timemodified = $enrolinfo['timestamp'];
-                            $cmc->completionstate = 1;
-                            $cmc->viewed = 1;
-                            $DB->update_record('course_modules_completion', $cmc);
-                            goone_set_completion($cm, $user->id, '', "completed");
-                        }
-                    } else if(($enrolinfo['pass'] == true || $enrolinfo['pass'] == 1)) {
-                        $newcmc = new stdClass();
-                        $newcmc->coursemoduleid = $cm->id;
-                        $newcmc->userid = $user->id;
-                        $newcmc->completionstate = 1;
-                        $newcmc->viewed = 1;
-                        $newcmc->timemodified = $enrolinfo['timestamp'];
-                        $DB->insert_record('course_modules_completion', $newcmc);
-                        goone_set_completion($cm, $user->id, '', "completed");
-                    }
+/**
+ * Process the request after basic checks.
+ * The function is split to allow for internal testing (test webhook requests omitting the signature check).
+ *
+ * @param array $la_postjson - Decoded JSON request
+ * @param mixed $request - Original JSON request (to append in log)
+ *
+ * @return void
+ */
+function mod_goone_api_payload_process_post_request($la_postjson, $request): void {
+    global $DB;
+
+    $logobj = new stdClass;
+
+    $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
+    if (empty($enrolinfo['pass'])) {
+        return;
+    }
+    $user = goone_get_moodle_user($enrolinfo['user_id']);
+
+    if ($user) {
+        $activities = $DB->get_records('goone', array('loid' => $la_postjson['data']['lo_id']));
+        $mod = $DB->get_record('modules', array('name' => 'goone'));
+        if (!empty($activities)) {
+            foreach ($activities as $id => $activity) {
+                $cm = $DB->get_record('course_modules', array('course' => $activity->course, 'module' => $mod->id, 'instance' => $activity->id));
+                $cmc = $DB->get_record('course_modules_completion', array('coursemoduleid' => $cm->id, 'userid' => $user->id));
+
+                // Ensure the user is enrolled in course.
+                $context = \context_course::instance($activity->course);
+                if (!is_enrolled($context, $user)) {
+                    continue;
                 }
-            }else{
-                $logobj->message_info = get_string('activitynotfound', 'mod_goone')."\n\n".$request;
-                $logobj->timecreated = time() ;
-                $DB->insert_record('mod_goone_webhook_logs', $logobj);
+
+                if (!$cmc || !in_array($cmc->completionstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS])) {
+                    //Check viewed and mark it.
+                    $lmsviewed = $DB->record_exists('course_modules_viewed', ['coursemoduleid' => $cm->id, 'userid' => $user->id]);
+                    $result = [];
+                    if (!$lmsviewed) {
+                        $completion = new \completion_info($activity->course);
+                        $completion->set_module_viewed($cm, $user->id);
+                        $result[] = 'viewed';
+                    }
+                    if ($cm->completion == 2 && $activity->completionsubmit) { // "Student must finish the Learning Object to complete it"
+                        goone_set_completion($cm, $user->id, '', "completed");
+                        $result[] = 'completed';
+                    }
+                    $resultstr = implode(',', $result);
+                    $logobj->message_info = "Success. User: {$user->id}, course: {$activity->course}, cm {$cm->id}, set {$resultstr}\n\n".$request;
+                    $logobj->timecreated = time();
+                    $DB->insert_record('goone_webhook_logs', $logobj);
+                }
             }
         } else {
-            $logobj->message_info = get_string('usernotfound', 'mod_goone')."\n\n".$request;
-            $logobj->timecreated = time();
-            $DB->insert_record('mod_goone_webhook_logs', $logobj);
+            $logobj->message_info = get_string('activitynotfound', 'mod_goone')."\n\n".$request;
+            $logobj->timecreated = time() ;
+            $DB->insert_record('goone_webhook_logs', $logobj);
         }
-
-    }else {
-
-            $logobj->message_info = get_string('signaturenotset', 'mod_goone')."\n\n".$request;
-            $logobj->timecreated = time();
-            $DB->insert_record('mod_goone_webhook_logs', $logobj);
+    } else {
+        $logobj->message_info = get_string('usernotfound', 'mod_goone')."\n\n".$request;
+        $logobj->timecreated = time();
+        $DB->insert_record('goone_webhook_logs', $logobj);
     }
-
 }
+
 
 function mod_goone_create_webhook_api_request() {
     global $PAGE, $OUTPUT, $DB, $CFG;
@@ -1574,12 +1639,12 @@ function mod_goone_create_webhook_api_request() {
 
                 $logobj->message_info = $result;
                 $logobj->timecreated = time();
-                $DB->insert_record('mod_goone_webhook_logs', $logobj);
+                $DB->insert_record('goone_webhook_logs', $logobj);
 
                 if (curl_errno($ch)) {
                     $logobj->message_info = 'Error:' . curl_error($ch);
                     $logobj->timecreated = time();
-                    $DB->insert_record('mod_goone_webhook_logs', $logobj);
+                    $DB->insert_record('goone_webhook_logs', $logobj);
                     echo $OUTPUT->header();
                         echo html_writer::tag('div', get_string('webhookcurlerror', 'mod_goone'), array('class'=>'alert alert-primary', 'role'=> 'alert'));
                     echo $OUTPUT->footer();
@@ -1593,7 +1658,7 @@ function mod_goone_create_webhook_api_request() {
             } else {
                 $logobj->message_info = get_string('tokennotdefined', 'mod_goone');
                 $logobj->timecreated = time();
-                $DB->insert_record('mod_goone_webhook_logs', $logobj);
+                $DB->insert_record('goone_webhook_logs', $logobj);
             }
     } else {
         require_login();

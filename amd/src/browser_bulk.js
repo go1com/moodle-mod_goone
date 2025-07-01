@@ -16,7 +16,6 @@
 /**
  * Javascript for browser.php functions.
  *
- * @package     mod_goone
  * @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -133,7 +132,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 browser.loadResults($("#type").val(),$("#topic").val(),$("#language").val(),$("#provider").val(),
                     $("#keyword").val(),$("#sort").val(),browser.offSet,true,$("#duration").val());
             });
-    
+
             $('#keyword').keypress(function (e) {
                 if (e.which == 13) {
                     $('#keyword').submit();
@@ -378,7 +377,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             });   
            var course_section =   $(".list-group-flush input[type='radio']:checked").val();
            selecteditemsids = selecteditemsids.replace(/,\s*$/, "");
-           if (course_section !== '') {
+           if (course_section !== '' && typeof(course_section) !== 'undefined') {
                 $('#resultcoursesearch').html('<div id="spinny" class="preloader w-100 text-center" style="display:block;"><img src="'+M.cfg.wwwroot+'/mod/goone/pix/spinner.gif"></div><br/><span style="text-align: center;">'+M.util.get_string('processingitems', 'mod_goone')+'</span>');
                 Ajax.call([{
                     methodname: 'bulk_mod_goone_process_add_to_existing_course',

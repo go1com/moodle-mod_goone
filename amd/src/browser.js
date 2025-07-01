@@ -86,7 +86,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 $('.multiselect-reset').on('click',function () {
                         browser.changeFilter();
                 });
-                browser.loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),
+                var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
+                browser.loadResults($("#type").val(),fixedTags,$("#language").val(),$("#provider").val(),
                     $("#keyword").val(),$("#sort").val(),browser.offSet);
             });
 
@@ -110,8 +111,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         modal.setSaveButtonText(Str.get_string('submit', 'core'));
                         modal.getRoot().on(ModalEvents.save, function() {
                             try {
-                                window.opener.$('#id_loid').val(loid);
-                                window.opener.$('#id_loname').val(loname);
+                                window.opener.document.getElementById('id_loid').value = loid;
+                                window.opener.document.getElementById('id_loname').value = loname;
                             }
                             catch (err) {}
                             window.close();
@@ -122,7 +123,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             });
             $("#load-more").click(function() {
                 browser.offSet = browser.offSet + 20;
-                browser.loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),
+                var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
+                browser.loadResults($("#type").val(),fixedTags,$("#language").val(),$("#provider").val(),
                     $("#keyword").val(),$("#sort").val(),browser.offSet);
             });
             $('#keyword').keypress(function (e) {
@@ -140,7 +142,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             }
             browser.offSet = 0;
             $("#goone-browser-results").html("");
-            browser.loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),
+            var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
+            browser.loadResults($("#type").val(),fixedTags,$("#language").val(),$("#provider").val(),
                 $("#keyword").val(),$("#sort").val(),browser.offSet);
         };
 
@@ -163,7 +166,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         $("#load-more-div").show();
                         $("#end-of-results").hide();
                     }
-                    if(type + '' != $("#type").val() + '' || tag + '' != $("#tag").val() + '' || language +
+                    var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
+                    if(type + '' != $("#type").val() + '' || tag + '' != fixedTags + '' || language +
                     '' != $("#language").val() + '' || provider + '' != $("#provider").val() + '') {
                             browser.changeFilter();
                     }

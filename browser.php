@@ -49,6 +49,8 @@ $PAGE->set_pagelayout('embedded');
 $PAGE->set_title(get_string('contentbrowser', 'goone'));
 $PAGE->set_heading(get_string('contentbrowser', 'goone'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/mod/goone/css/bootstrap-multiselect.css'));
+$PAGE->requires->jquery();
+$PAGE->requires->js('/mod/goone/js/bootstrap-multiselect.js');
 $PAGE->requires->js_call_amd('mod_goone/browser', 'init');
 
 echo $OUTPUT->header();

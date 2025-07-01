@@ -1,3 +1,7 @@
+# Warning
+
+This is a beta version of the plugin, it is considered unstable and is not recommended for production. 
+
 # Go1 Module
 
 Go1 is a content company and as such they provide a content library of learning

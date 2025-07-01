@@ -28,8 +28,8 @@ $tasks = array(
     array(
         'classname' => '\mod_goone\task\check_mark_completion',
         'blocking' => 0,
-        'minute' => '*',
-        'hour' => '*',
+        'minute' => 'R',
+        'hour' => '*/2',
         'day' => '*',
         'month' => '*',
         'dayofweek' => '*'

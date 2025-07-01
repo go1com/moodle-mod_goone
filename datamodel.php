@@ -71,7 +71,9 @@ if ((!empty($scoid)) && confirm_sesskey()) {
         }
         if ($element == 'cmi.core.lesson_status' && $value == 'passed') {
             $netelement = preg_replace('/\.N(\d+)\./', "\.\$1\.", $element);
-            $result = goone_set_completion($cm, $USER->id, '', "completed");
+            if ($cm->completion == 2 && $goone->completionsubmit) {
+                $result = goone_set_completion($cm, $USER->id, '', "completed");
+            }
         }
     }
     if ($result) {
