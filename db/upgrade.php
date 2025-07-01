@@ -92,5 +92,10 @@ function xmldb_goone_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2024112000, 'goone');
     }
 
+    if( $oldversion < 2025070100) {
+        $DB->execute("DELETE FROM {goone_usermap} WHERE userid IS NULL");
+        upgrade_mod_savepoint(true, 2025070100, 'goone');
+    }
+
     return true;
 }

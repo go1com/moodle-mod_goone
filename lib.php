@@ -831,8 +831,6 @@ function goone_get_moodle_user($gooneuserid) {
     // API V3
     // $userinfofromgo = bulk_mod_goone_apiv3_custom_api_request('user-accounts', $gooneuserid);
 
-    $DB->execute("DELETE FROM {goone_usermap} WHERE userid IS NULL");
-
     if ($row = $DB->get_record('goone_usermap', ['gooneuserid' => $gooneuserid])) {
         $user = $DB->get_record('user', ['id' => $row->userid]);
         return $user;
@@ -1590,10 +1588,12 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
                         goone_set_completion($cm, $user->id, '', "completed");
                         $result[] = 'completed';
                     }
+                    /*
                     $resultstr = implode(',', $result);
                     $logobj->message_info = "Success. User: {$user->id}, course: {$activity->course}, cm {$cm->id}, set {$resultstr}\n\n".$request;
                     $logobj->timecreated = time();
                     $DB->insert_record('goone_webhook_logs', $logobj);
+                    */
                 }
             }
         } else {
