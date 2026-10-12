@@ -32,6 +32,7 @@ $id = required_param('id', PARAM_INT);
 
 require_login();
 goone_check_capabilities($mode, $id);
+$browsecontext = goone_get_browse_context($mode, $id);
 
 
 $config = get_config('mod_goone');
@@ -51,7 +52,7 @@ $PAGE->set_heading(get_string('contentbrowser', 'goone'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/mod/goone/css/bootstrap-multiselect.css'));
 $PAGE->requires->jquery();
 $PAGE->requires->js('/mod/goone/js/bootstrap-multiselect.js');
-$PAGE->requires->js_call_amd('mod_goone/browser', 'init');
+$PAGE->requires->js_call_amd('mod_goone/browser', 'init', array($browsecontext->id));
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('mod_goone/browser', $facets);

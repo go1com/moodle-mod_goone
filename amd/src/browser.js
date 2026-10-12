@@ -32,8 +32,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
         var browser = {};
         browser.offSet = 0;
         browser.initial = 0;
+        browser.contextid = 0;
         Str.get_string('expand', 'core', browser.cleartext);
-        browser.init = function() {
+        browser.init = function(contextid) {
+            browser.contextid = contextid;
             $(document).ready(function () {
                 $('#sort').change(function() {
                     browser.changeFilter();
@@ -102,7 +104,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     }).done(function(modal) {
                         Ajax.call([{
                             methodname: 'mod_goone_get_modal',
-                            args: {loid: loid},
+                            args: {loid: loid, contextid: browser.contextid},
                             done: function(data) {
                                 modal.setBody(Templates.render('mod_goone/modal', JSON.parse(data.result)));
                             },
@@ -152,7 +154,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             $("#spinny").show();
             Ajax.call([{
                 methodname: 'mod_goone_get_hits',
-                args: {type: type, tag: tag, language: language, provider: provider, keyword: keyword, sort: sort, offset: offSet},
+                args: {type: type, tag: tag, language: language, provider: provider, keyword: keyword, sort: sort, offset: offSet, contextid: browser.contextid},
                 done: function(data) {
                     $("#goone-browser-results").append(data.result);
                     $("#spinny").hide();

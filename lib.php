@@ -780,22 +780,31 @@ function goone_convert_hours_mins($time, $format = '%02d:%02d') {
  * @param int $id
  */
 function goone_check_capabilities($mode, $id) {
+    $context = goone_get_browse_context($mode, $id);
+    require_capability('mod/goone:addinstance', $context);
+    return true;
+}
+
+/**
+ * Resolve the context in which a goone activity is being added or updated.
+ *
+ * @param string $mode 'add' (course context) or 'update' (module context)
+ * @param int $id Course id when adding, goone instance id when updating
+ * @return context The course or module context used for the capability check
+ */
+function goone_get_browse_context($mode, $id) {
     global $DB;
 
     switch ($mode) {
         case 'add':
-            // Check if course context capability allowed.
+            // Adding a new activity: use the course context.
             $course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
-            $context = context_course::instance($course->id);
-            require_capability('mod/goone:addinstance', $context);
-            return true;
+            return context_course::instance($course->id);
         case 'update':
-            // Check if module context capability allowed.
+            // Updating an existing activity: use the module context.
             $goone = $DB->get_record('goone', array('id' => $id), '*', MUST_EXIST);
             $cm = get_coursemodule_from_instance("goone", $goone->id, $goone->course);
-            $context = context_module::instance($cm->id);
-            require_capability('mod/goone:addinstance', $context);
-            return true;
+            return context_module::instance($cm->id);
         default:
             throw new moodle_exception('invalidparam');
     }
