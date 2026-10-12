@@ -1082,18 +1082,16 @@ function bulk_mod_goone_modal_search_course_result($stringtosearch = '') {
     global $DB;
     $result = array();
     if (!empty($stringtosearch)) {
-        $sql = "SELECT 
-                    id, fullname, shortname, idnumber 
-                FROM 
-                    {course}
-                WHERE
-                    id > 1
-                AND
-                    shortname like '%".$stringtosearch."%' 
-                OR 
-                    fullname like '%".$stringtosearch."%'";
+        $searchterm = '%' . $DB->sql_like_escape($stringtosearch) . '%';
+        $shortnamelike = $DB->sql_like('shortname', ':shortnamesearch', false);
+        $fullnamelike = $DB->sql_like('fullname', ':fullnamesearch', false);
+        $sql = "SELECT id, fullname, shortname, idnumber
+                  FROM {course}
+                 WHERE id > 1
+                   AND ($shortnamelike OR $fullnamelike)";
+        $params = ['shortnamesearch' => $searchterm, 'fullnamesearch' => $searchterm];
 
-        $searchresult = $DB->get_records_sql($sql);
+        $searchresult = $DB->get_records_sql($sql, $params);
 
         $result['has_courses'] = !empty($searchresult);
 
