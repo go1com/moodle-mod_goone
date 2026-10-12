@@ -1497,10 +1497,15 @@ function mod_goone_view_api_payload_logs() {
         $sqllogs = $DB->get_records_sql('SELECT * FROM {goone_webhook_logs} ORDER BY timecreated DESC');
         $table = new html_table();
         $table->head = array('Id', 'message_info', 'Timestamp');
-        foreach ($sqllogs as $id => $record) {
-            $record->timecreated = date("Y/m/d H:i:s", $record->timecreated);
+        $table->data = array();
+        foreach ($sqllogs as $record) {
+            // Escape the stored message (XSS attack evasion).
+            $table->data[] = array(
+                $record->id,
+                s($record->message_info),
+                date("Y/m/d H:i:s", $record->timecreated),
+            );
         }
-        $table->data = $sqllogs;
         echo html_writer::table($table);
     echo $OUTPUT->footer();
 }
