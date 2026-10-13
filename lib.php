@@ -194,6 +194,7 @@ function goone_delete_instance($id) {
         return false;
     }
     $cm = get_coursemodule_from_instance('goone', $id);
+    $DB->delete_records('goone_completion', array('gooneid' => $goone->id));
     $DB->delete_records('goone', array('id' => $goone->id));
 
     return true;
