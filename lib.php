@@ -253,46 +253,6 @@ function goone_supports($feature) {
 }
 
 /**
- * Obtains the automatic completion state for this goone based on any conditions
- * in goone settings.
- *
- * @param object $course Course
- * @param object $cm Course-module
- * @param int $userid User ID
- * @param bool $type Type of comparison (or/and; can be used as return value if no conditions)
- * @return bool True if completed, false if not. (If no conditions, then return
- *   value depends on comparison type)
- */
-function goone_get_completion_state($course, $cm, $userid, $type) {
-    global $CFG, $DB;
-
-    // Get goone details.
-    if (!($goone = $DB->get_record('goone', array('id' => $cm->instance)))) {
-        throw new Exception("Can't find goone {$cm->instance}");
-    }
-
-    $params = array('userid' => $userid, 'gooneid' => $goone->id);
-    $sql = "
-        SELECT completed
-        FROM {goone_completion}
-        WHERE userid=:userid AND gooneid=:gooneid";
-
-    $locomplete = $DB->get_field_sql($sql, $params);
-    if ($goone->completionsubmit) {
-        if ($locomplete == 2) {
-            $result = true;
-        } else {
-            $result = false;
-        }
-    } else {
-        // Completion option is not enabled so just return $type.
-        return $type;
-    }
-
-    return $result;
-}
-
-/**
  * Generates go token and writes result to plugin config
  *
  */
@@ -1461,24 +1421,16 @@ function bulk_mod_goone_create_api_secret_key($n = 12) {
 }
 
 
-function mod_goone_check_webhook()
-{
-    $url = "https://gateway.go1.com/webhooks";
-    $curl = curl_init($url);
-
+function mod_goone_check_webhook() {
     goone_tokentest();
-    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "GET");
-    curl_setopt($curl, CURLOPT_URL, $url);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
-    $headers = array(
+    $curl = new curl();
+    $curl->setHeader(array(
         'Cache-Control: no-cache',
         'api-version: 2022-07-01',
         'Authorization: Bearer '.get_config('mod_goone', 'token'),
-    );
-    curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-    $resp = curl_exec($curl);
-    curl_close($curl);
+    ));
+    $resp = $curl->get("https://gateway.go1.com/webhooks");
     $webhook = json_decode($resp);
 
     if(isset($webhook->total) && $webhook->total > 0 ) {
@@ -1645,30 +1597,25 @@ function mod_goone_create_webhook_api_request() {
             $token = get_config('mod_goone', 'token');
             if (!empty($token)) {
                 set_config('goone_api_secret', bulk_mod_goone_create_api_secret_key(), 'mod_goone');
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, 'https://gateway.go1.com/webhooks');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-                curl_setopt($ch, CURLOPT_POST, 1);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, '{
+                $curl = new curl();
+                $curl->setHeader(array(
+                    'Content-Type: application/json',
+                    'Authorization: Bearer '.$token,
+                    'Api-Version: 2022-07-01',
+                ));
+                $result = $curl->post('https://gateway.go1.com/webhooks', '{
                                                        "name": "Open LMS webhook for course completion",
                                                        "url": "'.$CFG->wwwroot.'/mod/goone/payload.php",
                                                        "secret_key": "'.get_config('mod_goone', 'goone_api_secret').'",
                                                        "event_types": ["enrollment.complete"]
-                                                        }'
-                                                    );
-                $headers = array();
-                $headers[] = 'Content-Type: application/json';
-                $headers[] = 'Authorization: '.$token;
-                $headers[] = 'Api-Version: 2022-07-01';
-                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-                $result = curl_exec($ch);
+                                                        }');
 
                 $logobj->message_info = $result;
                 $logobj->timecreated = time();
                 $DB->insert_record('goone_webhook_logs', $logobj);
 
-                if (curl_errno($ch)) {
-                    $logobj->message_info = 'Error:' . curl_error($ch);
+                if ($curl->get_errno()) {
+                    $logobj->message_info = 'Error:' . $curl->error;
                     $logobj->timecreated = time();
                     $DB->insert_record('goone_webhook_logs', $logobj);
                     echo $OUTPUT->header();
@@ -1676,7 +1623,6 @@ function mod_goone_create_webhook_api_request() {
                     echo $OUTPUT->footer();
                     die;
                 }
-                curl_close($ch);
                 echo $OUTPUT->header();
                     echo html_writer::tag('div', get_string('webhooknewcreatedgood', 'mod_goone'), array('class'=>'alert alert-primary', 'role'=> 'alert'));
                 echo $OUTPUT->footer();
