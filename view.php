@@ -98,8 +98,10 @@ if (!empty($sstate)) {
     );
 }
 $data = array (
-    'token' => $goone->token,
-    'loid' => $goone->loid,
+    'scormpackage' => json_encode(
+        array('token' => (string) $goone->token, 'version' => '1.2', 'id' => (int) $goone->loid),
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+    ),
 );
 echo $OUTPUT->render_from_template('mod_goone/view', $data);
 

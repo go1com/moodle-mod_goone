@@ -42,7 +42,7 @@ if ($ADMIN->fulltree) {
 
 
         $createwebhook = '<a class="btn btn-primary" target="_blank" href="'
-        .$CFG->wwwroot. '/mod/goone/payload.php?create_webhook=1" role="button">' . get_string('createwebhook', 'mod_goone') . '</a>'; 
+        .$CFG->wwwroot. '/mod/goone/payload.php?create_webhook=1&sesskey=' . sesskey() . '" role="button">' . get_string('createwebhook', 'mod_goone') . '</a>'; 
        
         $webhooklogs = '<br/><br/> <a class="btn btn-primary" target="_blank" href="'
         .$CFG->wwwroot. '/mod/goone/payload.php?logs_view=1" role="button">' . get_string('viewwebhooklogs', 'mod_goone') . '</a>';

@@ -66,6 +66,8 @@ function goone_add_instance($data, $mform = null) {
  */
 function goone_download_scorm($loid) {
     global $CFG;
+    // Sanitise the learning object id: it is used to build temp file paths.
+    $loid = clean_param($loid, PARAM_ALPHANUMEXT);
     // Create temporary storage directory since we need to open a zip.
     $tempdir = make_temp_directory('goone/');
     $filename = $loid.'.zip';
@@ -136,6 +138,8 @@ function goone_get_coursemodule_info($coursemodule) {
  */
 function goone_extract_scorm_token($loid, $tempdir, $filename, $filepath = null ) {
     global $CFG;
+    // Sanitise the learning object id: it is used to build temp file paths.
+    $loid = clean_param($loid, PARAM_ALPHANUMEXT);
     // Open zip and extract 'config.js'.
     if (empty($filepath)) {
         $filepath = $CFG->tempdir . '/goone/' . $filename;
@@ -1448,7 +1452,7 @@ function bulk_mod_goone_create_api_secret_key($n = 12) {
     $randsecret = '';
 
     for ($i = 0; $i < $n; $i++) {
-        $index = rand(0, strlen($characters) - 1);
+        $index = random_int(0, strlen($characters) - 1);
         $randsecret .= $characters[$index];
     }
 
@@ -1538,7 +1542,7 @@ function mod_goone_api_payload_process_post() {
     $calculatedSignature = hash_hmac('sha256', $stringposttimestamp, $api_secret);
 
     if (isset($signature[1])) {
-        if ($calculatedSignature == $signature[1]) {
+        if (hash_equals($calculatedSignature, $signature[1])) {
             mod_goone_api_payload_process_post_request($la_postjson, $request);
         } else {
             $logobj->message_info = get_string('signaturenotmatching', 'mod_goone')."\n\n".$request;
@@ -1623,6 +1627,15 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
 
 function mod_goone_create_webhook_api_request() {
     global $PAGE, $OUTPUT, $DB, $CFG;
+
+    // Creating a webhook changes site state (it regenerates the signing secret and
+    // registers a GO1 webhook), so require login, capability and a valid sesskey.
+    require_login();
+    $context = context_system::instance();
+    require_capability('mod/goone:viewbulkcontent', $context);
+    require_sesskey();
+    $PAGE->set_context($context);
+
     $logobj = new stdClass;
     // Check if webhook already created and prevent creation of multiple elements.
     $webhook = mod_goone_check_webhook();
@@ -1673,9 +1686,6 @@ function mod_goone_create_webhook_api_request() {
                 $DB->insert_record('goone_webhook_logs', $logobj);
             }
     } else {
-        require_login();
-        $context = context_system::instance();
-        $PAGE->set_context($context);
         $PAGE->set_pagelayout('admin');
         $PAGE->set_url('/mod/goone/payload.php?create_webhook=1');
         $PAGE->set_title(get_string('logs_webhook', 'mod_goone'));
