@@ -25,9 +25,9 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'mod_goone';
-$plugin->version  = 2026101301;
+$plugin->version  = 2026101302;
 $plugin->release  = 'v4.5b5';
-$plugin->requires = 2022112810.04;
+$plugin->requires = 2023100900;
 $plugin->maturity = MATURITY_BETA;
 $plugin->dependencies = array(
     'mod_scorm' => ANY_VERSION,
