@@ -25,8 +25,8 @@ require.config({
     }
 });
 define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notification', 'core/ajax',
- 'core/modal_factory', 'core/modal_events'],
-    function($, BsMultiselect, Templates, Str, Notification, Ajax, ModalFactory, ModalEvents) {
+ 'core/modal', 'core/modal_cancel', 'core/modal_events'],
+    function($, BsMultiselect, Templates, Str, Notification, Ajax, Modal, ModalCancel, ModalEvents) {
         var browser = {};
         browser.offSet = 0;
         browser.initial = 0;
@@ -102,10 +102,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 var loname = $(this).data('name');
                 var loid = $(this).data('id');
 
-                   return ModalFactory.create({
+                   return Modal.create({
                         title: loname,
                         large: true
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         Ajax.call([{
                             methodname: 'bulk_mod_goone_get_modal',
                             args: {loid: loid},
@@ -194,13 +194,13 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
 
                 if (elementseleted === false) {
                     // message that no items selected
-                    return ModalFactory.create({
+                    return ModalCancel.create({
                         title: M.util.get_string('searchcoursemodaltitle', 'mod_goone'),
-                        type: ModalFactory.types.CANCEL,
                         large: false,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('noitemsselected', 'mod_goone'));
                         modal.show();
+                        return modal;
                     }).then(function (modal){
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
@@ -210,13 +210,13 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
 
                 if ( countitemsselected >= 200 ) {
                     // Message limit of items reached
-                    return ModalFactory.create({
+                    return ModalCancel.create({
                         title: M.util.get_string('searchcoursemodaltitle', 'mod_goone'),
                         large: false,
-                        type: ModalFactory.types.CANCEL,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('toomanyitems', 'mod_goone'));
                         modal.show();
+                        return modal;
                     }).then(function (modal){
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
@@ -227,13 +227,14 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 data = {
                     result: '{}',
                 };
-               return ModalFactory.create({
+               return Modal.create({
                     title: M.util.get_string('searchcoursemodaltitle', 'mod_goone'),
                     large: true,
-                }).done(function(modal) {
+                }).then(function(modal) {
                     modal.setBody(Templates.render('mod_goone/modalcoursesearch_bulk', JSON.parse(data.result)));
                     modal.setFooter('<div id="searchcoursefooter"></div>');
                     modal.show();
+                    return modal;
                 }).then(function (modal){
                         // Handle hidden event.
                         modal.getRoot().on(ModalEvents.hidden, function() {
@@ -259,13 +260,13 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 });
                 if ( countitemsselected == 0 ) {
                     // Message no items selected
-                    return ModalFactory.create({
+                    return ModalCancel.create({
                         title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
                         large: false,
-                        type: ModalFactory.types.CANCEL,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('noitemsselected', 'mod_goone'));
                         modal.show();
+                        return modal;
                     }).then(function (modal){
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
@@ -273,13 +274,13 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     }); 
                 } else if (countitemsselected >= 200 ) {
                     // Message limit of items reached
-                    return ModalFactory.create({
+                    return ModalCancel.create({
                         title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
                         large: false,
-                        type: ModalFactory.types.CANCEL,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('toomanyitems', 'mod_goone'));
                         modal.show();
+                        return modal;
                     }).then(function (modal){
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
@@ -296,13 +297,14 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 data = {
                     result: dataobj,
                 };
-               return ModalFactory.create({
+               return Modal.create({
                     title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
                     large: true,
-                }).done(function(modal) {
+                }).then(function(modal) {
                     modal.setBody(Templates.render('mod_goone/modalcreatecourses_bulk', JSON.parse(data.result)));
                     modal.setFooter('<button class="btn btn-primary" id="save_create_selected_items">'+M.util.get_string('save', 'moodle')+'</button>');
                     modal.show();
+                    return modal;
                 }).then(function (modal){
                         // Handle hidden event.
                         modal.getRoot().on(ModalEvents.hidden, function() {
@@ -334,13 +336,13 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 // 2 Single course all items
                 if ( coursename == "") {
                     // message that no course name
-                    return ModalFactory.create({
+                    return ModalCancel.create({
                         title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
-                        type: ModalFactory.types.CANCEL,
                         large: false,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('coursenameempty', 'mod_goone'));
                         modal.show();
+                        return modal;
                     }).then(function (modal){
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
@@ -389,13 +391,13 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 }]);
            } else {
                 // Message that no topic selected
-                return ModalFactory.create({
+                return ModalCancel.create({
                     title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
                     large: false,
-                    type: ModalFactory.types.CANCEL,
-                }).done(function(modal) {
+                }).then(function(modal) {
                     modal.setBody(M.util.get_string('notopicselected', 'mod_goone'));
                     modal.show();
+                    return modal;
                 }).then(function (modal){
                         modal.getRoot().on(ModalEvents.hidden, function() {
                         modal.destroy();

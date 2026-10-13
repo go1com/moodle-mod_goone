@@ -27,8 +27,8 @@ require.config({
     }
 });
 define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notification', 'core/ajax',
- 'core/modal_factory', 'core/modal_events'],
-    function($, BsMultiselect, Templates, Str, Notification, Ajax, ModalFactory, ModalEvents) {
+ 'core/modal_save_cancel', 'core/modal_events'],
+    function($, BsMultiselect, Templates, Str, Notification, Ajax, ModalSaveCancel, ModalEvents) {
         var browser = {};
         browser.offSet = 0;
         browser.initial = 0;
@@ -97,11 +97,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 var loname = $(this).data('name');
                 var loid = $(this).data('id');
 
-                   return ModalFactory.create({
+                   return ModalSaveCancel.create({
                         title: loname,
-                        type: ModalFactory.types.SAVE_CANCEL,
                         large: true
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         Ajax.call([{
                             methodname: 'mod_goone_get_modal',
                             args: {loid: loid, contextid: browser.contextid},
@@ -121,7 +120,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                             return false;
                         });
                         modal.show();
-                    });
+                        return modal;
+                    }).catch(Notification.exception);
             });
             $("#load-more").click(function() {
                 browser.offSet = browser.offSet + 20;
