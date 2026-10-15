@@ -166,4 +166,32 @@ class lib_test extends advanced_testcase {
         $this->assertEquals($info->name, $goone->name);
         $this->assertEquals(1, $info->customdata['customcompletionrules']['completionsubmit']);
     }
+
+    public function test_payload_request_marks_unviewed_activity_viewed_and_complete() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $goone = $this->getDataGenerator()->create_module('goone', [
+            'course' => $course->id,
+            'loid' => '12345',
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionview' => COMPLETION_VIEW_REQUIRED,
+            'completionsubmit' => 1,
+        ]);
+        // Map the GO1 user to the student, so that no GO1 user lookup occurs.
+        $DB->insert_record('goone_usermap', ['userid' => $student->id, 'gooneuserid' => 777, 'timecreated' => time()]);
+        // A valid token prevents a token request.
+        set_config('token_time', time(), 'mod_goone');
+        // The GO1 enrolment that the webhook refers to.
+        \curl::mock_response(json_encode(['id' => 1, 'pass' => 1, 'user_id' => 777]));
+
+        mod_goone_api_payload_process_post_request(['data' => ['id' => 1, 'lo_id' => '12345']], '{}');
+
+        $this->assertTrue($DB->record_exists('course_modules_viewed',
+            ['coursemoduleid' => $goone->cmid, 'userid' => $student->id]));
+        $this->assertEquals(COMPLETION_COMPLETE, $DB->get_field('course_modules_completion', 'completionstate',
+            ['coursemoduleid' => $goone->cmid, 'userid' => $student->id]));
+    }
 }

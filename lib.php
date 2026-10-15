@@ -1551,7 +1551,7 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
                     $lmsviewed = $DB->record_exists('course_modules_viewed', ['coursemoduleid' => $cm->id, 'userid' => $user->id]);
                     $result = [];
                     if (!$lmsviewed) {
-                        $completion = new \completion_info($activity->course);
+                        $completion = new \completion_info(get_course($activity->course));
                         $completion->set_module_viewed($cm, $user->id);
                         $result[] = 'viewed';
                     }
