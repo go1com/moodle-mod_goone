@@ -25,6 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__ . '/upgradelib.php');
+
 /**
  * Execute upgrade script.
  *
@@ -95,6 +97,12 @@ function xmldb_goone_upgrade($oldversion) {
     if( $oldversion < 2025070100) {
         $DB->execute("DELETE FROM {goone_usermap} WHERE userid IS NULL");
         upgrade_mod_savepoint(true, 2025070100, 'goone');
+    }
+
+    if ($oldversion < 2026101501) {
+        // Make the goone_usermap indexes unique, as install.xml defines them.
+        mod_goone_upgrade_usermap_unique_indexes();
+        upgrade_mod_savepoint(true, 2026101501, 'goone');
     }
 
     return true;

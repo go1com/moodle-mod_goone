@@ -488,7 +488,7 @@ function goone_set_completion($cm, $userid, $location, $type) {
     $gcomp = new stdClass();
     $gcomp->userid = $userid;
     $gcomp->gooneid = $cm->instance;
-    $gcomp->position = $location;
+    $gcomp->location = $location;
     $gcomp->completed = ($type == "completed") ? 2 : 1;
     $gcomp->timemodified = time();
     $compstate = $DB->get_record(

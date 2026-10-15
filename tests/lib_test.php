@@ -71,6 +71,25 @@ class lib_test extends advanced_testcase {
 
     }
 
+    public function test_goone_set_completion_saves_location_for_resume() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $goone = $this->getDataGenerator()->create_module('goone', ['course' => $course->id]);
+        $cm = get_coursemodule_from_id('goone', $goone->cmid, 0, false, MUST_EXIST);
+        $this->setUser($student);
+
+        goone_set_completion($cm, $student->id, 'page-3', 'inprogress');
+
+        $this->assertEquals('page-3', $DB->get_field('goone_completion', 'location',
+            ['gooneid' => $goone->id, 'userid' => $student->id]));
+        $sstate = goone_session_state($goone->id, $cm->id);
+        $this->assertEquals('page-3', $sstate->def->{6}['cmi.core.lesson_location']);
+        $this->assertEquals('resume', $sstate->def->{6}['cmi.core.entry']);
+    }
+
     public function test_goone_check_capabilities() {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
