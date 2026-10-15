@@ -1,0 +1,88 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Backup and restore tests.
+ *
+ * @package   mod_goone
+ * @category  test
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace mod_goone;
+
+use advanced_testcase;
+
+defined('MOODLE_INTERNAL') || die();
+
+global $CFG;
+require_once($CFG->dirroot . '/course/lib.php');
+
+/**
+ * Backup and restore tests class.
+ *
+ * @package   mod_goone
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class backup_restore_test extends advanced_testcase {
+
+    public function test_duplicate_restores_goone_instance() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $goone = $this->getDataGenerator()->create_module('goone', ['course' => $course->id, 'loid' => '12345']);
+
+        $newcm = duplicate_module($course, get_fast_modinfo($course)->get_cm($goone->cmid));
+
+        $new = $DB->get_record('goone', ['id' => $newcm->instance], '*', MUST_EXIST);
+        $this->assertEquals('12345', $new->loid);
+        $this->assertEquals($goone->token, $new->token);
+    }
+
+    public function test_duplicate_keeps_intro_files_and_links() {
+        global $CFG, $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $goone = $this->getDataGenerator()->create_module('goone', ['course' => $course->id]);
+        $link = $CFG->wwwroot . '/mod/goone/view.php?id=' . $goone->cmid;
+        $DB->update_record('goone', [
+            'id' => $goone->id,
+            'intro' => '<p>Intro <a href="' . $link . '">self</a></p>',
+            'introformat' => FORMAT_HTML,
+        ]);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_module::instance($goone->cmid)->id,
+            'component' => 'mod_goone',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'image.png',
+        ], 'image');
+
+        $newcm = duplicate_module($course, get_fast_modinfo($course)->get_cm($goone->cmid));
+
+        $new = $DB->get_record('goone', ['id' => $newcm->instance], '*', MUST_EXIST);
+        $newlink = $CFG->wwwroot . '/mod/goone/view.php?id=' . $newcm->id;
+        $this->assertEquals('<p>Intro <a href="' . $newlink . '">self</a></p>', $new->intro);
+        $this->assertEquals(FORMAT_HTML, $new->introformat);
+        $this->assertTrue(get_file_storage()->file_exists(
+            \context_module::instance($newcm->id)->id, 'mod_goone', 'intro', 0, '/', 'image.png'));
+    }
+}

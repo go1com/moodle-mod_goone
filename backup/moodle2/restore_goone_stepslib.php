@@ -65,11 +65,6 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
         $oldid = $data->id;
         $data->course = $this->get_courseid();
 
-        // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
-        // See MDL-9367.
-        $data->timeopen = $this->apply_date_offset($data->timeopen);
-        $data->timeclose = $this->apply_date_offset($data->timeclose);
-
         // Insert the goone record.
         $newitemid = $DB->insert_record('goone', $data);
         // Immediately after inserting "activity" record, call this.
@@ -92,10 +87,11 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
         // (child paths, file areas nor links decoder).
     }
     /**
-     * Unused function
+     * Restore the files of the goone activity.
      * @return void
      */
     protected function after_execute() {
         // Add goone related files, no need to match by itemname (just internally handled context).
+        $this->add_related_files('mod_goone', 'intro', null);
     }
 }

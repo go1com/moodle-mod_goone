@@ -46,6 +46,8 @@ class backup_goone_activity_structure_step extends backup_activity_structure_ste
 
         $goone = new backup_nested_element('goone', array('id'),
                                             array('name',
+                                                  'intro',
+                                                  'introformat',
                                                   'loid',
                                                   'loname',
                                                   'token',
@@ -77,7 +79,7 @@ class backup_goone_activity_structure_step extends backup_activity_structure_ste
         $goonecompletion->annotate_ids('user', 'userid');
 
         // Define file annotations.
-        // (none).
+        $goone->annotate_files('mod_goone', 'intro', null); // This file area has no itemid.
 
         // Return the root element (goone), wrapped into standard activity structure.
         return $this->prepare_activity_structure($goone);
