@@ -135,6 +135,40 @@ class lib_test extends advanced_testcase {
         }
     }
 
+    /**
+     * Data provider for test_mod_goone_api_payload_signature_valid().
+     *
+     * @return array[]
+     */
+    public static function payload_signature_provider(): array {
+        $request = '{"data":{"id":1}}';
+        $signed = function(string $secret) use ($request): string {
+            return 't=1700000000,v1=' . hash_hmac('sha256', '1700000000.' . $request, $secret);
+        };
+        return [
+            'Correct signature' => [$request, $signed('secret'), 'secret', true],
+            'Incorrect signature' => [$request, $signed('other'), 'secret', false],
+            'Empty secret, header signed with the empty key' => [$request, $signed(''), '', false],
+            'Empty header' => [$request, '', 'secret', false],
+            'Header with one item' => [$request, 't=1700000000', 'secret', false],
+            'Header items without a value' => [$request, 'abc,def', 'secret', false],
+        ];
+    }
+
+    /**
+     * Test the signature check of the GO1 webhook request.
+     *
+     * @dataProvider payload_signature_provider
+     * @param string $request The request body.
+     * @param string $header The GO1-Signature header.
+     * @param string $secret The webhook secret.
+     * @param bool $expected Whether the signature is valid.
+     */
+    public function test_mod_goone_api_payload_signature_valid(string $request, string $header, string $secret,
+            bool $expected) {
+        $this->assertSame($expected, mod_goone_api_payload_signature_valid($request, $header, $secret));
+    }
+
     public function test_goone_check_capabilities() {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();

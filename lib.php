@@ -1478,39 +1478,62 @@ function mod_goone_api_payload_process_post() {
 
     $request = file_get_contents('php://input');
 
-    $api_secret = get_config('mod_goone', 'goone_api_secret');
-    if (empty($api_secret)) {
+    $api_secret = (string) get_config('mod_goone', 'goone_api_secret');
+    if ($api_secret === '') {
         $logobj->message_info = get_string('signaturenotconfig', 'mod_goone')."\n\n".$request;
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
+        return;
     }
 
-    $la_postjson = json_decode($request, true);
-    $signature = array();
-
-    $la_signature = explode(',', $_SERVER['HTTP_GO1_SIGNATURE']);
-    foreach ($la_signature as $key => $value) {
-        $la_signatureitems = explode('=', $value);
-        $signature[] = $la_signatureitems[1];
-    }
-
-    $timestamp = $signature[0];
-    $stringposttimestamp = (string) $timestamp.".".$request;
-    $calculatedSignature = hash_hmac('sha256', $stringposttimestamp, $api_secret);
-
-    if (isset($signature[1])) {
-        if (hash_equals($calculatedSignature, $signature[1])) {
-            mod_goone_api_payload_process_post_request($la_postjson, $request);
-        } else {
-            $logobj->message_info = get_string('signaturenotmatching', 'mod_goone')."\n\n".$request;
-            $logobj->timecreated = time();
-            $DB->insert_record('goone_webhook_logs', $logobj);
-        }
-    }  else {
+    $header = $_SERVER['HTTP_GO1_SIGNATURE'] ?? '';
+    if ($header === '') {
         $logobj->message_info = get_string('signaturenotset', 'mod_goone')."\n\n".$request;
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
+        return;
     }
+
+    if (!mod_goone_api_payload_signature_valid($request, $header, $api_secret)) {
+        $logobj->message_info = get_string('signaturenotmatching', 'mod_goone')."\n\n".$request;
+        $logobj->timecreated = time();
+        $DB->insert_record('goone_webhook_logs', $logobj);
+        return;
+    }
+
+    mod_goone_api_payload_process_post_request(json_decode($request, true), $request);
+}
+
+/**
+ * Check the signature of a GO1 webhook request.
+ *
+ * The GO1-Signature header holds "key=value" items. The value of the first item is the timestamp,
+ * and the value of the second item is the HMAC-SHA256 of "<timestamp>.<request>".
+ *
+ * @param string $request The request body.
+ * @param string $header The GO1-Signature header.
+ * @param string $secret The webhook secret.
+ * @return bool True if the signature is valid.
+ */
+function mod_goone_api_payload_signature_valid(string $request, string $header, string $secret): bool {
+    if ($secret === '' || $header === '') {
+        return false;
+    }
+
+    $values = [];
+    foreach (explode(',', $header) as $item) {
+        $parts = explode('=', $item, 2);
+        if (count($parts) !== 2) {
+            return false;
+        }
+        $values[] = $parts[1];
+    }
+    if (count($values) < 2) {
+        return false;
+    }
+
+    $expected = hash_hmac('sha256', $values[0] . '.' . $request, $secret);
+    return hash_equals($expected, $values[1]);
 }
 
 

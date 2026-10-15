@@ -16,7 +16,7 @@
 /**
  * Javascript for browser.php functions.
  *
- * @package   mod_goone
+ * @module    mod_goone/browser
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
@@ -156,7 +156,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             $("#spinny").show();
             Ajax.call([{
                 methodname: 'mod_goone_get_hits',
-                args: {type: type, tag: tag, language: language, provider: provider, keyword: keyword, sort: sort, offset: offSet, contextid: browser.contextid},
+                args: {type: type, tag: tag, language: language, provider: provider, keyword: keyword, sort: sort,
+                    offset: offSet, contextid: browser.contextid},
                 done: function(data) {
                     $("#goone-browser-results").append(data.result);
                     $("#spinny").hide();

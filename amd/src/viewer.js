@@ -16,7 +16,7 @@
 /**
  * Javascript for view.php to dynamically fit content to window.
  *
- * @package   mod_goone
+ * @module    mod_goone/viewer
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
