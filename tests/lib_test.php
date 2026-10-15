@@ -46,6 +46,7 @@ class lib_test extends advanced_testcase {
         $this->assertTrue(goone_supports(FEATURE_COMPLETION_TRACKS_VIEWS) == true);
         $this->assertTrue(goone_supports(FEATURE_COMPLETION_HAS_RULES) == true);
         $this->assertTrue(goone_supports(FEATURE_BACKUP_MOODLE2) == true);
+        $this->assertEquals(MOD_PURPOSE_CONTENT, goone_supports(FEATURE_MOD_PURPOSE));
     }
 
     public function test_goone_convert_hours_mins() {
@@ -153,12 +154,16 @@ class lib_test extends advanced_testcase {
     public function test_goone_get_coursemodule_info() {
         $this->resetAfterTest();
 
-        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1, 'completion' => COMPLETION_TRACKING_AUTOMATIC]);
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
         $goonegen = $this->getDataGenerator()->get_plugin_generator('mod_goone');
-        $goone = $goonegen->create_instance(['course' => $course->id]);
+        $goone = $goonegen->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionsubmit' => 1,
+        ]);
         $cm = get_coursemodule_from_id('goone', $goone->cmid, 0, true, MUST_EXIST);
         $info = goone_get_coursemodule_info($cm);
         $this->assertEquals($info->name, $goone->name);
-        $this->assertObjectHasProperty( 'customdata', $info);
+        $this->assertEquals(1, $info->customdata['customcompletionrules']['completionsubmit']);
     }
 }

@@ -27,7 +27,6 @@ defined('MOODLE_INTERNAL') || die();
 $tasks = array(
     array(
         'classname' => '\mod_goone\task\check_mark_completion',
-        'blocking' => 0,
         'minute' => 'R',
         'hour' => '*/2',
         'day' => '*',
