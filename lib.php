@@ -84,11 +84,15 @@ function goone_download_scorm($loid) {
     $curl->download_one($serverurl, null, $curlopts);
 
     fclose($tempfile);
-    $token = goone_extract_scorm_token($loid, $tempdir, $filename);
+    // An empty download is not a ZIP file, thus do not try to extract it.
+    $token = false;
+    if (filesize($tempdir . $filename) > 0) {
+        $token = goone_extract_scorm_token($loid, $tempdir, $filename);
+    }
     fulldelete($tempdir.$filename);
     fulldelete($tempdir.$loid);
     if (!$token) {
-        throw new moodle_exception('lodownloaderror', $loid);
+        throw new moodle_exception('lodownloaderror', 'mod_goone', '', null, 'Learning object ID: ' . $loid);
     }
     return $token;
 }
@@ -616,7 +620,7 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
     $curl->setHeader($header);
     $response = @json_decode($curl->get($serverurl), true);
     if ($curl->get_info()['http_code'] != 200) {
-        throw new moodle_exception('go1apierror');
+        throw new moodle_exception('go1apierror', 'mod_goone');
     }
     foreach ($response['hits'] as &$obj) {
         $obj['description'] = goone_clean_hits($obj['description']);
@@ -773,7 +777,7 @@ function goone_get_browse_context($mode, $id) {
             $cm = get_coursemodule_from_instance("goone", $goone->id, $goone->course);
             return context_module::instance($cm->id);
         default:
-            throw new moodle_exception('invalidparam');
+            throw new moodle_exception('invalidparameter', 'debug');
     }
 }
 
@@ -840,9 +844,8 @@ function goone_get_moodle_user($gooneuserid) {
     // Try the user part of the email as username.
     if (empty($user)) {
         $regexp = '/([^@]+)@.*/i';
-        $username = preg_match($regexp, $email, $p);
-        if (!empty($p[1])) {
-            $user = $DB->get_record('user', array('username' => $username));
+        if (preg_match($regexp, $email, $p)) {
+            $user = $DB->get_record('user', array('username' => $p[1]));
         }
     }
 
@@ -1107,10 +1110,10 @@ function bulk_mod_goone_process_course_per_item($items = '') {
                     html_writer::tag('a',get_string('edit'), 
                         array('target'=>'_blank', 'href'=>$CFG->wwwroot."/course/edit.php?id=".$createdcourse->id));
                 } else {
-                    throw new moodle_exception('createprocessactivityfailed', 'bulk_mod_goone');
+                    throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
                 }
             } else {
-                throw new moodle_exception('createprocesscoursefailed', 'bulk_mod_goone');
+                throw new moodle_exception('createprocesscoursefailed', 'mod_goone');
             }
         }
    } else {
@@ -1123,11 +1126,11 @@ function bulk_mod_goone_process_course_per_item($items = '') {
                   if ($createdcourse = bulk_mod_goone_create_course($loinfo)) {
                         if (bulk_mod_goone_create_assign_module($loinfo, $createdcourse)) {
                         } else {
-                            throw new moodle_exception('createprocessactivityfailed', 'bulk_mod_goone');
+                            throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
                         }      
                         $coursescreated[$createdcourse->fullname] = $createdcourse->id ;
                     } else {
-                        throw new moodle_exception('createprocesscoursefailed', 'bulk_mod_goone');
+                        throw new moodle_exception('createprocesscoursefailed', 'mod_goone');
                     }
               }
        }
@@ -1161,17 +1164,17 @@ function bulk_mod_goone_process_course_single_course($items = '', $coursename = 
                     html_writer::tag('a',get_string('edit'), 
                         array('target'=>'_blank', 'href'=>$CFG->wwwroot."/course/view.php?id=".$createdcourse->id));
                 } else {
-                    throw new moodle_exception('createprocessactivityfailed', 'bulk_mod_goone');
+                    throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
                 }
             } else {
-                throw new moodle_exception('createprocesscoursefailed', 'bulk_mod_goone');
+                throw new moodle_exception('createprocesscoursefailed', 'mod_goone');
             }       
         }
    } else {
       $la_items = explode(',', $items);
       // create course 
       if (!$createdcourse = bulk_mod_goone_create_course("", $coursename)) {
-        throw new moodle_exception('createprocesscoursefailed', 'bulk_mod_goone');
+        throw new moodle_exception('createprocesscoursefailed', 'mod_goone');
       }
       foreach ($la_items as $loid) {
         if (empty($loid)) continue; 
@@ -1179,7 +1182,7 @@ function bulk_mod_goone_process_course_single_course($items = '', $coursename = 
         $loinfo = bulk_mod_goone_get_learnig_objective_info($loid);
         if ($loinfo) {
             if (!bulk_mod_goone_create_assign_module($loinfo, $createdcourse)) {
-                throw new moodle_exception('createprocessactivityfailed', 'bulk_mod_goone');
+                throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
             }      
         }
       }
@@ -1207,7 +1210,7 @@ function bulk_mod_goone_process_add_to_existing_course($course_section, $selecte
         $loinfo = bulk_mod_goone_get_learnig_objective_info($selecteditemsids);
         if ($loinfo) {
             if (!bulk_mod_goone_create_assign_module($loinfo, $course, $la_coursesection[1])) {
-                throw new moodle_exception('createprocessactivityfailed', 'bulk_mod_goone');
+                throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
             }      
         }
     } else {
@@ -1217,7 +1220,7 @@ function bulk_mod_goone_process_add_to_existing_course($course_section, $selecte
             $loinfo = bulk_mod_goone_get_learnig_objective_info($loid);
             if ($loinfo) {
                 if (!bulk_mod_goone_create_assign_module($loinfo, $course, $la_coursesection[1])) {
-                    throw new moodle_exception('createprocessactivityfailed', 'bulk_mod_goone');
+                    throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
                 }      
             }
       }

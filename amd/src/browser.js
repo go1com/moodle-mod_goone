@@ -33,10 +33,11 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
         browser.offSet = 0;
         browser.initial = 0;
         browser.contextid = 0;
-        Str.get_string('expand', 'core', browser.cleartext);
         browser.init = function(contextid) {
             browser.contextid = contextid;
-            $(document).ready(function () {
+            // The multiselect filters need the text of their reset option, thus start when the string and the page are ready.
+            Promise.all([Str.getString('clear', 'core'), $.ready]).then(function(strings) {
+                browser.cleartext = strings[0];
                 $('#sort').change(function() {
                     browser.changeFilter();
                 });
@@ -91,7 +92,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
                 browser.loadResults($("#type").val(),fixedTags,$("#language").val(),$("#provider").val(),
                     $("#keyword").val(),$("#sort").val(),browser.offSet);
-            });
+                return;
+            }).catch(Notification.exception);
 
             $(document).on('click', '#lomodal', function() {
                 var loname = $(this).data('name');

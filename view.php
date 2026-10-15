@@ -37,13 +37,13 @@ if ($newwin == 1) {
 }
 
 if (!$cm = get_coursemodule_from_id('goone', $cmid, 0, true, MUST_EXIST)) {
-    throw new moodle_exception(get_string('cmidincorrect', 'goone'));
+    throw new moodle_exception('cmidincorrect', 'mod_goone');
 }
 if (!$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST)) {
-    throw new moodle_exception(get_string('courseincorrect', 'goone'));
+    throw new moodle_exception('courseincorrect', 'mod_goone');
 }
 if (!$goone = $DB->get_record('goone', array('id' => $cm->instance))) {
-    throw new moodle_exception(get_string('cmincorrect', 'goone'));
+    throw new moodle_exception('cmincorrect', 'mod_goone');
 }
 
 require_login($course, true, $cm);

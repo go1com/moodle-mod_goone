@@ -88,6 +88,7 @@ $string['overview'] = "Overview";
 $string['learning'] = "Learning";
 $string['description'] = 'Description';
 $string['lodownloaderror'] = 'Error downloading learning object, please check your GO1 credentials';
+$string['go1apierror'] = 'The GO1 API request failed. Please notify your site administrator.';
 $string['privacy:metadata:goone_completion:gooneid'] = 'The ID of the GO1 Course activity';
 $string['privacy:metadata:goone_completion:userid'] = 'The ID of a user who has interacted with a GO1 course';
 $string['privacy:metadata:goone_completion:location'] = 'The users last recorded position in a GO1 Course';

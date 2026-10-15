@@ -45,7 +45,7 @@ class custom_completion extends activity_custom_completion {
 
         // Get goone details.
         if (!($goone = $DB->get_record('goone', array('id' => $this->cm->instance)))) {
-            throw new \moodle_exception("Can't find goone {$this->cm->instance}");
+            throw new \moodle_exception('invalidcoursemodule', 'error', '', null, 'goone instance ID: ' . $this->cm->instance);
         }
 
         $locomplete = $DB->get_field('goone_completion', 'completed', ['userid' => $userid, 'gooneid' => $goone->id]);

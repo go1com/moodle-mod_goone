@@ -90,6 +90,51 @@ class lib_test extends advanced_testcase {
         $this->assertEquals('resume', $sstate->def->{6}['cmi.core.entry']);
     }
 
+    public function test_goone_get_moodle_user_matches_email_local_part_as_username() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user(['username' => 'jsmith', 'email' => 'other@example.com']);
+        // A valid token prevents a token request.
+        set_config('token_time', time(), 'mod_goone');
+        // The GO1 user. Only the local part of the email address matches a Moodle user.
+        \curl::mock_response(json_encode([
+            'email' => 'jsmith@example.org',
+            'first_name' => 'No',
+            'last_name' => 'Match',
+        ]));
+
+        $result = goone_get_moodle_user(555);
+
+        $this->assertNotFalse($result);
+        $this->assertEquals($user->id, $result->id);
+        $this->assertEquals($user->id, $DB->get_field('goone_usermap', 'userid', ['gooneuserid' => 555]));
+    }
+
+    public function test_goone_get_browse_context_unknown_mode_throws_invalidparameter() {
+        try {
+            goone_get_browse_context('unknown', 1);
+            $this->fail('An exception was expected.');
+        } catch (moodle_exception $e) {
+            $this->assertEquals('invalidparameter', $e->errorcode);
+            $this->assertEquals('debug', $e->module);
+        }
+    }
+
+    public function test_goone_download_scorm_failure_throws_lodownloaderror() {
+        $this->resetAfterTest();
+        // A mocked response is not written to the download file, thus the download is empty.
+        \curl::mock_response('');
+
+        try {
+            goone_download_scorm('9999');
+            $this->fail('An exception was expected.');
+        } catch (moodle_exception $e) {
+            $this->assertEquals('lodownloaderror', $e->errorcode);
+            $this->assertEquals('mod_goone', $e->module);
+        }
+    }
+
     public function test_goone_check_capabilities() {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
