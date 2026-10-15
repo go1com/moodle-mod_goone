@@ -44,7 +44,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 $('#provider').multiselect({
                     inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '15rem',
                     includeResetOption: true,
@@ -55,7 +55,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     }});
                 $('#tag').multiselect({inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '15rem',
                     includeResetOption: true,
@@ -66,7 +66,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     }});
                 $('#language').multiselect({inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '15rem',
                     includeResetOption: true,
@@ -77,7 +77,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     }});
                 $('#type').multiselect({inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '15rem',
                     includeResetOption: true,
@@ -86,12 +86,12 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('.multiselect-reset').on('click',function () {
+                $('.multiselect-reset').on('click', function() {
                         browser.changeFilter();
                 });
                 var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
-                browser.loadResults($("#type").val(),fixedTags,$("#language").val(),$("#provider").val(),
-                    $("#keyword").val(),$("#sort").val(),browser.offSet);
+                browser.loadResults($("#type").val(), fixedTags, $("#language").val(), $("#provider").val(),
+                    $("#keyword").val(), $("#sort").val(), browser.offSet);
                 return;
             }).catch(Notification.exception);
 
@@ -116,8 +116,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                             try {
                                 window.opener.document.getElementById('id_loid').value = loid;
                                 window.opener.document.getElementById('id_loname').value = loname;
+                            } catch (err) {
+                                // The opener window is not available, thus there is nothing to update.
                             }
-                            catch (err) {}
                             window.close();
                             return false;
                         });
@@ -128,10 +129,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             $("#load-more").click(function() {
                 browser.offSet = browser.offSet + 20;
                 var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
-                browser.loadResults($("#type").val(),fixedTags,$("#language").val(),$("#provider").val(),
-                    $("#keyword").val(),$("#sort").val(),browser.offSet);
+                browser.loadResults($("#type").val(), fixedTags, $("#language").val(), $("#provider").val(),
+                    $("#keyword").val(), $("#sort").val(), browser.offSet);
             });
-            $('#keyword').keypress(function (e) {
+            $('#keyword').keypress(function(e) {
                 if (e.which == 13) {
                     $('#keyword').submit();
                     browser.changeFilter();
@@ -147,8 +148,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             browser.offSet = 0;
             $("#goone-browser-results").html("");
             var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
-            browser.loadResults($("#type").val(),fixedTags,$("#language").val(),$("#provider").val(),
-                $("#keyword").val(),$("#sort").val(),browser.offSet);
+            browser.loadResults($("#type").val(), fixedTags, $("#language").val(), $("#provider").val(),
+                $("#keyword").val(), $("#sort").val(), browser.offSet);
         };
 
         browser.loadResults = function(type, tag, language, provider, keyword, sort, offSet) {
@@ -172,7 +173,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         $("#end-of-results").hide();
                     }
                     var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
-                    if(type + '' != $("#type").val() + '' || tag + '' != fixedTags + '' || language +
+                    if (type + '' != $("#type").val() + '' || tag + '' != fixedTags + '' || language +
                     '' != $("#language").val() + '' || provider + '' != $("#provider").val() + '') {
                             browser.changeFilter();
                     }

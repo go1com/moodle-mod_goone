@@ -28,7 +28,7 @@ define(['jquery'], function($) {
     viewer.urltogo = null;
 
     viewer.init = function() {
-        $(document).ready(function () {
+        $(document).ready(function() {
             var newheight = ($(window).height() - 50);
             if (newheight < 680 || isNaN(newheight)) {
                 newheight = 680;
@@ -36,7 +36,7 @@ define(['jquery'], function($) {
             $("#content").height(newheight);
         });
 
-        $(window).on('resize',function(){
+        $(window).on('resize', function() {
             var newheight = ($(window).height() - 50);
             if (newheight < 680 || isNaN(newheight)) {
                 newheight = 680;
@@ -46,8 +46,9 @@ define(['jquery'], function($) {
     };
 
     viewer.newwindow = function(urltogo) {
-        setTimeout(function(){
-            window.open(urltogo + '&win=1');}, 1500);
+        setTimeout(function() {
+            window.open(urltogo + '&win=1');
+        }, 1500);
     };
     return viewer;
 });
