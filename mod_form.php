@@ -30,21 +30,6 @@ if (!defined('MOODLE_INTERNAL')) {
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
 require_once($CFG->dirroot.'/mod/goone/lib.php');
 
-if (isset($data->add)) {
-    $browserurl = (new moodle_url('/mod/goone/browser.php',
-        array (
-            'mode' => 'add',
-            'id' => $course->id
-        )
-    ))->out(false);
-} else if (isset($data->update)) {
-    $browserurl = (new moodle_url('/mod/goone/browser.php',
-        array (
-            'mode' => 'update',
-            'id' => $data->id
-        )
-    ))->out(false);
-}
 /**
  * Goone settings form.
  *
@@ -60,7 +45,7 @@ class mod_goone_mod_form extends moodleform_mod {
      * @return void
      */
     public function definition() {
-        global $CFG, $DB, $OUTPUT, $PAGE, $browserurl;
+        global $CFG, $DB, $OUTPUT, $PAGE;
 
         $mform =& $this->_form;
 
@@ -68,6 +53,14 @@ class mod_goone_mod_form extends moodleform_mod {
         $mform->addElement('text', 'name', get_string('name'), array('size' => '64'));
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', get_string('nonameselected', 'goone'), 'required', null, 'client');
+
+        // Update an existing activity (goone instance id), or add one to the course (course id).
+        if ($this->get_instance()) {
+            $browserparams = ['mode' => 'update', 'id' => $this->get_instance()];
+        } else {
+            $browserparams = ['mode' => 'add', 'id' => $this->get_current()->course];
+        }
+        $browserurl = (new moodle_url('/mod/goone/browser.php', $browserparams))->out(false);
         $mform->addElement('button', get_string('contentbrowser', 'goone'),
             get_string('lobrowser', 'goone'), array('onclick' => "window.open('$browserurl')"));
 

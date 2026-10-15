@@ -28,7 +28,6 @@ require_once($CFG->dirroot.'/mod/goone/lib.php');
 require_login();
 require_capability('mod/goone:viewbulkcontent', context_system::instance());
 
-$config = get_config('mod_goone');
 if (!goone_tokentest()) {
     echo $OUTPUT->notification(get_string('connectionerror', 'mod_goone'), 'notifyproblem');
 }

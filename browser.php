@@ -34,9 +34,6 @@ require_login();
 goone_check_capabilities($mode, $id);
 $browsecontext = goone_get_browse_context($mode, $id);
 
-
-$config = get_config('mod_goone');
-
 if (!goone_tokentest()) {
     echo $OUTPUT->notification(get_string('connectionerror', 'goone'), 'notifyproblem');
 }
