@@ -23,6 +23,10 @@
  * @author    Fouad Saikali <fouad@ecreators.com.au>
  */
 
+namespace mod_goone;
+
+use advanced_testcase;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -33,7 +37,7 @@ defined('MOODLE_INTERNAL') || die();
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
  */
-class mod_goone_generator_testcase extends advanced_testcase {
+class generator_test extends advanced_testcase {
 
     public function test_create_instance() {
         global $DB;

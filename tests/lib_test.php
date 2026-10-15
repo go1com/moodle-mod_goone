@@ -24,6 +24,11 @@
  * @author    Fouad Saikali <fouad@ecreators.com.au>
  */
 
+namespace mod_goone;
+
+use advanced_testcase;
+use moodle_exception;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -35,7 +40,7 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
  */
-class mod_goone_lib_testcase extends advanced_testcase {
+class lib_test extends advanced_testcase {
 
     public function test_goone_supports() {
         $this->assertTrue(goone_supports(FEATURE_COMPLETION_TRACKS_VIEWS) == true);

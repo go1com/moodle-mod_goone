@@ -6,20 +6,13 @@ Feature: GO1 plugin configuration
 
   Background:
     Given the following config values are set as admin:
-      | theme                 | snap |
       | linkadmincategories   |  0   |
       | mod_goone_admin_users |      |
 
   @javascript
   Scenario: Configure the GO1 plugin as any admin
     When I log in as "admin"
-    And I am on site homepage
-    And I click on "#admin-menu-trigger" "css_element"
-    And I expand "Site administration" node
-    And I expand "Plugins" node
-    And I expand "Activity modules" node
-    And I should see "GO1"
-    And I follow "GO1"
+    And I navigate to "Plugins > Activity modules > GO1" in site administration
     And I should see "Retrieve GO1 credentials"
     And I should see "Client ID"
     And I should see "GO1 Oauth client ID"
