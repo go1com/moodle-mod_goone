@@ -198,7 +198,6 @@ function goone_delete_instance($id) {
     if (!$goone = $DB->get_record('goone', array('id' => $id))) {
         return false;
     }
-    $cm = get_coursemodule_from_instance('goone', $id);
     $DB->delete_records('goone_completion', array('gooneid' => $goone->id));
     $DB->delete_records('goone', array('id' => $goone->id));
 
@@ -1632,12 +1631,13 @@ function mod_goone_create_webhook_api_request() {
                     'Authorization: Bearer '.$token,
                     'Api-Version: 2022-07-01',
                 ));
-                $result = $curl->post('https://gateway.go1.com/webhooks', '{
-                                                       "name": "Open LMS webhook for course completion",
-                                                       "url": "'.$CFG->wwwroot.'/mod/goone/payload.php",
-                                                       "secret_key": "'.get_config('mod_goone', 'goone_api_secret').'",
-                                                       "event_types": ["enrollment.complete"]
-                                                        }');
+                $payload = json_encode(array(
+                    'name' => 'Open LMS webhook for course completion',
+                    'url' => $CFG->wwwroot . '/mod/goone/payload.php',
+                    'secret_key' => get_config('mod_goone', 'goone_api_secret'),
+                    'event_types' => array('enrollment.complete'),
+                ));
+                $result = $curl->post('https://gateway.go1.com/webhooks', $payload);
 
                 $logobj->message_info = $result;
                 $logobj->timecreated = time();

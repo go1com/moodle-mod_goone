@@ -61,7 +61,8 @@ class backup_goone_activity_structure_step extends backup_activity_structure_ste
                                             array('gooneid',
                                                   'userid',
                                                   'location',
-                                                  'completed'));
+                                                  'completed',
+                                                  'timemodified'));
                 // Build the tree.
                 $goone->add_child($goonecompletions);
                 $goonecompletions->add_child($goonecompletion);
