@@ -51,6 +51,9 @@ class custom_completion extends activity_custom_completion {
         $locomplete = $DB->get_field('goone_completion', 'completed', ['userid' => $userid, 'gooneid' => $goone->id]);
         if ($rule == 'completionsubmit') {
             $status = $locomplete == 2;
+        } else {
+            // A new rule in get_defined_custom_rules() must also get a branch here.
+            throw new \coding_exception("Unsupported custom completion rule '$rule'");
         }
         return $status ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
     }
