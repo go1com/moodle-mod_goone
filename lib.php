@@ -67,6 +67,8 @@ function goone_download_scorm($loid) {
     global $CFG;
     // Sanitise the learning object id: it is used to build temp file paths.
     $loid = clean_param($loid, PARAM_ALPHANUMEXT);
+    // Make sure that the access token is valid. This function can run long after the last API call.
+    goone_tokentest();
     // Create temporary storage directory since we need to open a zip.
     $tempdir = make_temp_directory('goone/');
     $filename = $loid.'.zip';

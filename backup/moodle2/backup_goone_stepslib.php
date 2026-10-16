@@ -50,7 +50,6 @@ class backup_goone_activity_structure_step extends backup_activity_structure_ste
                                                   'introformat',
                                                   'loid',
                                                   'loname',
-                                                  'token',
                                                   'completionsubmit',
                                                   'popup',
                                                   'timecreated',

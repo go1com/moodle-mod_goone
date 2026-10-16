@@ -97,6 +97,12 @@ if (!empty($sstate)) {
         sesskey(), "6", "1", $sstate->cmistate, $cmid, "GO1", false, true, "3")
     );
 }
+// The backup does not carry the launch token, thus a restored activity has none.
+// Get the token from GO1 and keep it for the next view.
+if (empty($goone->token)) {
+    $goone->token = goone_download_scorm($goone->loid);
+    $DB->set_field('goone', 'token', $goone->token, array('id' => $goone->id));
+}
 $data = array (
     'scormpackage' => json_encode(
         array('token' => (string) $goone->token, 'version' => '1.2', 'id' => (int) $goone->loid),
