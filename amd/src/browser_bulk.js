@@ -100,7 +100,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     $("#keyword").val(), $("#sort").val(), browser.offSet, false, $("#duration").val());
                 return;
             }).catch(Notification.exception);
-            $(document).on('click', '#lomodal', function() {
+            $(document).on('click', '.lomodal', function() {
                 var loname = $(this).data('name');
                 var loid = $(this).data('id');
 
