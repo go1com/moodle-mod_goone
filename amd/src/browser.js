@@ -33,6 +33,20 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
         browser.offSet = 0;
         browser.initial = 0;
         browser.contextid = 0;
+
+        /**
+         * Reads the selected values of a multiple select.
+         *
+         * jQuery gives null when the user selects nothing, and when the select has
+         * no options. The second case occurs when the GO1 API does not answer. A
+         * call to .map() on null stops the page with a JavaScript error.
+         *
+         * @param {String} selector The selector of the select element.
+         * @return {Array} The selected values, or an empty array.
+         */
+        browser.selected = function(selector) {
+            return $(selector).val() || [];
+        };
         browser.init = function(contextid) {
             browser.contextid = contextid;
             // The multiselect filters need the text of their reset option, thus start when the string and the page are ready.
@@ -89,8 +103,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 $('.multiselect-reset').on('click', function() {
                         browser.changeFilter();
                 });
-                var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
-                browser.loadResults($("#type").val(), fixedTags, $("#language").val(), $("#provider").val(),
+                var fixedTags = browser.selected("#tag").map(str => str.replace(/ /g, '%20'));
+                browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
+                    browser.selected("#provider"),
                     $("#keyword").val(), $("#sort").val(), browser.offSet);
                 return;
             }).catch(Notification.exception);
@@ -128,8 +143,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             });
             $("#load-more").click(function() {
                 browser.offSet = browser.offSet + 20;
-                var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
-                browser.loadResults($("#type").val(), fixedTags, $("#language").val(), $("#provider").val(),
+                var fixedTags = browser.selected("#tag").map(str => str.replace(/ /g, '%20'));
+                browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
+                    browser.selected("#provider"),
                     $("#keyword").val(), $("#sort").val(), browser.offSet);
             });
             $('#keyword').keypress(function(e) {
@@ -147,8 +163,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             }
             browser.offSet = 0;
             $("#goone-browser-results").html("");
-            var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
-            browser.loadResults($("#type").val(), fixedTags, $("#language").val(), $("#provider").val(),
+            var fixedTags = browser.selected("#tag").map(str => str.replace(/ /g, '%20'));
+            browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
+                    browser.selected("#provider"),
                 $("#keyword").val(), $("#sort").val(), browser.offSet);
         };
 
@@ -172,9 +189,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         $("#load-more-div").show();
                         $("#end-of-results").hide();
                     }
-                    var fixedTags = $("#tag").val().map(str => str.replace(/ /g, '%20'));
-                    if (type + '' != $("#type").val() + '' || tag + '' != fixedTags + '' || language +
-                    '' != $("#language").val() + '' || provider + '' != $("#provider").val() + '') {
+                    var fixedTags = browser.selected("#tag").map(str => str.replace(/ /g, '%20'));
+                    if (type + '' != browser.selected("#type") + '' || tag + '' != fixedTags + ''
+                        || language + '' != browser.selected("#language") + ''
+                        || provider + '' != browser.selected("#provider") + '') {
                             browser.changeFilter();
                     }
                 },
