@@ -18,9 +18,9 @@ Feature: Add a GO1 activity
     And I am on "Course1" course homepage
     And I turn editing mode on
     And I open the activity chooser
-    And I follow "Add a new GO1 content item"
+    And I add a GO1 content item from the activity chooser
     And I set the following fields to these values:
       | Name | Activity1 |
     And I click on "Open GO1 Content Browser" "button"
-    And I switch to a second window
+    And I switch to the GO1 content browser window
     And I switch to the main window
