@@ -100,7 +100,7 @@ $string['partneriddesc'] = "For use by GO1 partners only.";
 $string['partnersettingheading'] = "GO1 partner settings";
 $string['goone:addinstance'] = "Add or update a GO1 conent item";
 $string['goone:view'] = 'View GO1 module';
-$string['completiondetail:submit'] = 'Make a submission';
+$string['completiondetail:submit'] = 'Finish the learning object';
 // Bulk strings
 $string['pagetitle'] = "Go1 Content";
 $string['contenttype'] = "Content type";
