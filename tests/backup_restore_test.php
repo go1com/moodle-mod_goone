@@ -105,10 +105,10 @@ class backup_restore_test extends advanced_testcase {
      * @return object The new course module.
      */
     private function duplicate_activity(\stdClass $course, int $cmid) {
-        // Test the method on the class name. Do not make an object first: the
-        // constructor of this class is not the same on all Moodle versions.
+        // Test the method on the class name, and not on an object. The class is
+        // present on Moodle 4.5, but its constructor there does not accept a course.
         if (method_exists('\core_courseformat\local\cmactions', 'duplicate')) {
-            $cmactions = new \core_courseformat\local\cmactions();
+            $cmactions = new \core_courseformat\local\cmactions($course);
             return $cmactions->duplicate($cmid);
         }
         return duplicate_module($course, get_fast_modinfo($course)->get_cm($cmid));
