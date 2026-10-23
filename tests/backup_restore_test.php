@@ -47,7 +47,7 @@ class backup_restore_test extends advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $goone = $this->getDataGenerator()->create_module('goone', ['course' => $course->id, 'loid' => '12345']);
 
-        $newcm = duplicate_module($course, get_fast_modinfo($course)->get_cm($goone->cmid));
+        $newcm = $this->duplicate_activity($course, $goone->cmid);
 
         $new = $DB->get_record('goone', ['id' => $newcm->instance], '*', MUST_EXIST);
         $this->assertEquals('12345', $new->loid);
@@ -81,7 +81,7 @@ class backup_restore_test extends advanced_testcase {
             'filename' => 'image.png',
         ], 'image');
 
-        $newcm = duplicate_module($course, get_fast_modinfo($course)->get_cm($goone->cmid));
+        $newcm = $this->duplicate_activity($course, $goone->cmid);
 
         $new = $DB->get_record('goone', ['id' => $newcm->instance], '*', MUST_EXIST);
         $newlink = $CFG->wwwroot . '/mod/goone/view.php?id=' . $newcm->id;
@@ -89,5 +89,28 @@ class backup_restore_test extends advanced_testcase {
         $this->assertEquals(FORMAT_HTML, $new->introformat);
         $this->assertTrue(get_file_storage()->file_exists(
             \context_module::instance($newcm->id)->id, 'mod_goone', 'intro', 0, '/', 'image.png'));
+    }
+
+    /**
+     * Makes a copy of an activity.
+     *
+     * Moodle 5.2 made duplicate_module() deprecated and gives
+     * core_courseformat\local\cmactions::duplicate() in its place. The cmactions
+     * class is present on Moodle 4.5 and later, but the duplicate() method is only
+     * present on Moodle 5.2 and later. The test thus looks for the method, not for
+     * the class.
+     *
+     * @param \stdClass $course The course.
+     * @param int $cmid The course module id of the activity to copy.
+     * @return object The new course module.
+     */
+    private function duplicate_activity(\stdClass $course, int $cmid) {
+        // Test the method on the class name. Do not make an object first: the
+        // constructor of this class is not the same on all Moodle versions.
+        if (method_exists('\core_courseformat\local\cmactions', 'duplicate')) {
+            $cmactions = new \core_courseformat\local\cmactions();
+            return $cmactions->duplicate($cmid);
+        }
+        return duplicate_module($course, get_fast_modinfo($course)->get_cm($cmid));
     }
 }
