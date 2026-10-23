@@ -30,6 +30,21 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
         var browser = {};
         browser.offSet = 0;
         browser.initial = 0;
+
+        /**
+         * Reads the selected values of a multiple select.
+         *
+         * jQuery gives null when the user selects nothing, and when the select has
+         * no options. The second case occurs when the GO1 API does not answer. The
+         * external functions declare these values as arrays, thus null makes the
+         * request fail.
+         *
+         * @param {String} selector The selector of the select element.
+         * @return {Array} The selected values, or an empty array.
+         */
+        browser.selected = function(selector) {
+            return $(selector).val() || [];
+        };
         browser.init = function() {
             // The multiselect filters need the text of their reset option, thus start when the string and the page are ready.
             Promise.all([Str.getString('clear', 'core'), $.ready]).then(function(strings) {
@@ -96,8 +111,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 $('.multiselect-reset').on('click', function() {
                         browser.changeFilter();
                 });
-                browser.loadResults($("#type").val(), $("#topic").val(), $("#language").val(), $("#provider").val(),
-                    $("#keyword").val(), $("#sort").val(), browser.offSet, false, $("#duration").val());
+                browser.loadResults(browser.selected("#type"), browser.selected("#topic"),
+                    browser.selected("#language"), browser.selected("#provider"),
+                    $("#keyword").val(), $("#sort").val(), browser.offSet, false,
+                    browser.selected("#duration"));
                 return;
             }).catch(Notification.exception);
             $(document).on('click', '.lomodal', function() {
@@ -133,8 +150,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             });
             $("#load-more").click(function() {
                 browser.offSet = browser.offSet + 20;
-                browser.loadResults($("#type").val(), $("#topic").val(), $("#language").val(), $("#provider").val(),
-                    $("#keyword").val(), $("#sort").val(), browser.offSet, true, $("#duration").val());
+                browser.loadResults(browser.selected("#type"), browser.selected("#topic"),
+                    browser.selected("#language"), browser.selected("#provider"),
+                    $("#keyword").val(), $("#sort").val(), browser.offSet, true,
+                    browser.selected("#duration"));
             });
 
             $('#keyword').keypress(function(e) {
@@ -151,8 +170,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             }
             browser.offSet = 0;
             $("#goone-browser-results").html("");
-            browser.loadResults($("#type").val(), $("#topic").val(), $("#language").val(), $("#provider").val(),
-                $("#keyword").val(), $("#sort").val(), browser.offSet, false, $("#duration").val());
+            browser.loadResults(browser.selected("#type"), browser.selected("#topic"),
+                browser.selected("#language"), browser.selected("#provider"),
+                $("#keyword").val(), $("#sort").val(), browser.offSet, false,
+                browser.selected("#duration"));
         };
         browser.loadResults = function(type, topic, language, provider, keyword, sort, offSet, loadmore, duration) {
             $("#spinny").show();
@@ -179,8 +200,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         $("#load-more-div").show();
                         $("#end-of-results").hide();
                     }
-                    if (type + '' != $("#type").val() + '' || topic + '' != $("#topic").val() + '' || language +
-                    '' != $("#language").val() + '' || provider + '' != $("#provider").val() + '') {
+                    if (type + '' != browser.selected("#type") + ''
+                        || topic + '' != browser.selected("#topic") + ''
+                        || language + '' != browser.selected("#language") + ''
+                        || provider + '' != browser.selected("#provider") + '') {
                             browser.changeFilter();
                     }
                 },
