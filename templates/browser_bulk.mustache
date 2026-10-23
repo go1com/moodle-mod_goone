@@ -57,11 +57,50 @@
 #page-mod-goone-bulk div.modal.moodle-has-zindex.show > div > div > div.modal-body {
     height: inherit !important;
 }
+
+    /* Bootstrap 4 rules that Bootstrap 5 removed. Moodle 4.5 uses Bootstrap 4.
+       Moodle 5.0 and later use Bootstrap 5. These rules make the filter bar the
+       same on all versions. On Bootstrap 4 they agree with the framework, thus
+       Moodle 4.5 does not change. */
+    .goone-filters .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-right: -5px;
+        margin-left: -5px;
+    }
+    .goone-filters .form-row > [class*="col-"] {
+        padding-right: 5px;
+        padding-left: 5px;
+    }
+    .goone-filters .form-group {
+        margin-bottom: 1rem;
+    }
+    .goone-filters label {
+        display: block;
+        margin-left: 0;
+    }
+    /* .form-group is a flex row that wraps. The label goes above its control only
+       when the label and the control together are wider than the column. That is
+       true on Moodle 4.5, and not true on Moodle 5.0 and later. Give the label a
+       full line, thus the position does not change with the width. */
+    .goone-filters .form-group > label {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    .goone-filters select.custom-select {
+        display: block;
+        width: 100%;
+    }
+    /* Bootstrap 5 sets .badge { color: #fff }. The badge is then not visible on the
+       light card. Bootstrap 4 lets the badge use the colour of the parent. */
+    .badge.badge-black {
+        color: inherit;
+    }
 </style>
 
 <div class="container" >
     <h2 style="font-weight: unset;">{{# str }} pagetitle, mod_goone {{/ str }}</h2>
-    <form class="form-inline">
+    <form class="form-inline goone-filters">
         <div class="form-row w-100 mb-2">
             <div class="form-group col-sm-12 col-lg-12">
                 <div>
