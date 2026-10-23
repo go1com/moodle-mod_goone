@@ -501,6 +501,11 @@ function goone_set_completion($cm, $userid, $location, $type) {
 
     if ($compstate) {
         $gcomp->id = $compstate->id;
+        if ($type != "completed" && $compstate->completed == 2) {
+            // The user completed this learning object before. A progress update must not
+            // remove that record. Keep the completed value, and change only the location.
+            unset($gcomp->completed);
+        }
         $DB->update_record('goone_completion', $gcomp);
     } else {
         $DB->insert_record('goone_completion', $gcomp);

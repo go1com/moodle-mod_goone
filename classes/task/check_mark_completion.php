@@ -92,12 +92,18 @@ class check_mark_completion extends \core\task\scheduled_task {
                     if ($completion->is_enabled($cm) && $cm->completion == 2 && $goone->completionsubmit) {
                         if ($debugging) mtrace(" - proceed ", '');
                         // "Student must finish the Learning Object to complete it"
-                        $cmc = $DB->get_record('course_modules_completion', ['coursemoduleid' => $cm->id, 'userid' => $user->id]);
-                        if (!$cmc || !in_array($cmc->completionstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS])) {
+                        // Use the goone_completion value to make this decision. The value in
+                        // course_modules_completion can show complete while goone_completion is
+                        // not yet 2. If you read course_modules_completion, the task stops and
+                        // the two records stay different. Moodle then makes the activity
+                        // incomplete at the next calculation of the completion data.
+                        $locomplete = $DB->get_field('goone_completion', 'completed',
+                            ['gooneid' => $goone->id, 'userid' => $user->id]);
+                        if ($locomplete != 2) {
                             goone_set_completion($cm, $user->id, '', "completed");
                             if ($debugging) mtrace("set");
                         } else {
-                            if ($debugging) mtrace("skip: cmc->completionstate $cmc->completionstate");
+                            if ($debugging) mtrace("skip: goone_completion.completed $locomplete");
                         }
                     } else {
                         if ($debugging) mtrace(" - skip: cm->completion $cm->completion completionsubmit $goone->completionsubmit");
