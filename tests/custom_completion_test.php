@@ -49,7 +49,7 @@ class activity_custom_completion_test extends advanced_testcase {
      *
      * @return array[]
      */
-    public function get_state_provider(): array {
+    public static function get_state_provider(): array {
         return [
 
             'Rule available, user has submitted' => [
@@ -158,7 +158,7 @@ class activity_custom_completion_test extends advanced_testcase {
      *
      * @return array[]
      */
-    public function get_available_custom_rules_provider(): array {
+    public static function get_available_custom_rules_provider(): array {
         return [
             'Completion submit available' => [
                 COMPLETION_ENABLED, ['completionsubmit']
