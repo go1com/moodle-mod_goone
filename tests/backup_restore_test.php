@@ -51,7 +51,12 @@ class backup_restore_test extends advanced_testcase {
 
         $new = $DB->get_record('goone', ['id' => $newcm->instance], '*', MUST_EXIST);
         $this->assertEquals('12345', $new->loid);
-        $this->assertEquals($goone->token, $new->token);
+
+        // The backup does not carry the launch token. This agrees with view.php, which
+        // gets a new token from GO1 when the activity has none. A launch token belongs
+        // to one activity and does not stay valid, thus a copy must not keep it.
+        $this->assertEmpty($new->token,
+            'A copy of an activity must not keep the launch token of the source activity.');
     }
 
     public function test_duplicate_keeps_intro_files_and_links() {
