@@ -60,9 +60,11 @@ class behat_mod_goone extends behat_base {
         // with the item selected.
         $this->getSession()->wait(2000);
 
-        $add = "//*[contains(@class, 'modal')]"
-            . "//button[not(@disabled) and normalize-space(.) = 'Add']";
-        if ($this->getSession()->getPage()->find('xpath', $add)) {
+        // Use the data-action of the button. Other hidden buttons on the page also
+        // show the text "Add", for example the one of the message drawer.
+        $add = "//button[@data-action = 'add-selected-chooser-option']";
+        $button = $this->getSession()->getPage()->find('xpath', $add);
+        if ($button && $button->isVisible()) {
             $this->execute('behat_general::i_click_on', [$add, 'xpath_element']);
         }
     }
