@@ -133,6 +133,10 @@ class lib_test extends advanced_testcase {
             $this->assertEquals('lodownloaderror', $e->errorcode);
             $this->assertEquals('mod_goone', $e->module);
         }
+
+        // The empty download is not a ZIP file. The file packer of Moodle thus
+        // writes a debugging message. Tell the test that this message is expected.
+        $this->assertDebuggingCalled();
     }
 
     /**
