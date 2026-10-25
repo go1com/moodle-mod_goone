@@ -123,6 +123,46 @@ class browser_template_test extends advanced_testcase {
     }
 
     /**
+     * Gives each template that uses the Bootstrap data attributes.
+     *
+     * @return array[] The template file name.
+     */
+    public static function bootstrap_attribute_template_provider(): array {
+        return [
+            'bulk results' => ['hits_bulk.mustache'],
+            'course search result' => ['searchcourseresult_bulk.mustache'],
+            'detail modal' => ['modal.mustache'],
+            'bulk detail modal' => ['modal_bulk.mustache'],
+        ];
+    }
+
+    /**
+     * Each Bootstrap 4 data attribute must have its Bootstrap 5 twin.
+     *
+     * Bootstrap 4 reads data-toggle, data-target and data-parent. Bootstrap 5,
+     * which Moodle 5.0 and later use, reads data-bs-toggle, data-bs-target and
+     * data-bs-parent, and does nothing with the old names. Moodle gives a
+     * compatibility module for the old names, but it is deprecated since 5.0 and
+     * the Boost theme does not load it. Without both names the Add menu of the
+     * bulk content browser does not open, and the course list does not expand.
+     *
+     * @param string $template The template file name.
+     * @dataProvider bootstrap_attribute_template_provider
+     */
+    public function test_bootstrap_4_attributes_have_a_bootstrap_5_twin(string $template): void {
+        global $CFG;
+        $source = (string)file_get_contents($CFG->dirroot . '/mod/goone/templates/' . $template);
+
+        foreach (['toggle', 'target', 'parent', 'dismiss'] as $name) {
+            $bs4 = preg_match_all('/(?<!-bs)\bdata-' . $name . '="/', $source);
+            $bs5 = preg_match_all('/\bdata-bs-' . $name . '="/', $source);
+            $this->assertEquals($bs4, $bs5,
+                "$template has $bs4 data-$name attributes but $bs5 data-bs-$name attributes. "
+                . "Bootstrap 5 needs the data-bs- name, and Bootstrap 4 needs the old one.");
+        }
+    }
+
+    /**
      * The content type badge must use the colour of the parent.
      *
      * Bootstrap 5 sets .badge { color: #fff }. The badge is then not visible.

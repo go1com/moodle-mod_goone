@@ -34,13 +34,13 @@
 						  <div class="card">
 						    <div class="card-header" id="headingOne">
 						      <h5 class="mb-0">
-						        <button class="btn btn-link" data-toggle="collapse" data-target="#collapse-{{id}}" aria-expanded="true" aria-controls="collapse-{{id}}" data-shortname="{{shortname}}" data-courseid="{{id}}">
+						        <button class="btn btn-link" data-toggle="collapse" data-bs-toggle="collapse" data-target="#collapse-{{id}}" data-bs-target="#collapse-{{id}}" aria-expanded="true" aria-controls="collapse-{{id}}" data-shortname="{{shortname}}" data-courseid="{{id}}">
 						          {{fullname}}
 						        </button>
 						      </h5>
 						    </div>
 
-						    <div id="collapse-{{id}}" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+						    <div id="collapse-{{id}}" class="collapse" aria-labelledby="headingOne" data-parent="#accordion" data-bs-parent="#accordion">
 						      <div class="card-body">
 						      		<ul class="list-group list-group-flush">
 						      {{#sections}}
