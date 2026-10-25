@@ -205,6 +205,59 @@ function goone_delete_instance($id) {
 }
 
 /**
+ * Adds the GO1 options to the reset form of a course.
+ *
+ * @param object $mform The reset form.
+ */
+function goone_reset_course_form_definition(&$mform) {
+    $mform->addElement('header', 'gooneheader', get_string('modulenameplural', 'goone'));
+    $mform->addElement('advcheckbox', 'reset_goone_completion', get_string('resetcompletion', 'goone'));
+}
+
+/**
+ * Gives the default values of the GO1 options on the reset form.
+ *
+ * @param object $course The course.
+ * @return array The default values.
+ */
+function goone_reset_course_form_defaults($course) {
+    return array('reset_goone_completion' => 1);
+}
+
+/**
+ * Removes the GO1 progress of all users in a course.
+ *
+ * Moodle calls this function when a teacher resets a course. Without it, Moodle
+ * lists GO1 as not supported on the reset page, and the rows in goone_completion
+ * stay. The completion rule reads those rows, thus a learner became complete
+ * again when the learner opened the activity after the reset.
+ *
+ * The data is also removed when the teacher asks to delete the completion data,
+ * because the GO1 rows are part of that data.
+ *
+ * @param object $data The data from the reset form.
+ * @return array One record for each item that this function removed.
+ */
+function goone_reset_userdata($data) {
+    global $DB;
+
+    $status = array();
+    if (empty($data->reset_goone_completion) && empty($data->reset_completion)) {
+        return $status;
+    }
+
+    $DB->delete_records_select('goone_completion',
+        'gooneid IN (SELECT id FROM {goone} WHERE course = ?)', array($data->courseid));
+
+    $status[] = array(
+        'component' => get_string('modulenameplural', 'goone'),
+        'item' => get_string('resetcompletion', 'goone'),
+        'error' => false,
+    );
+    return $status;
+}
+
+/**
  * Returns an array of options for how GO1 courses can be presented
  * This is used by the participation report.
  *

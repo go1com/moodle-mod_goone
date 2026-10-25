@@ -151,3 +151,4 @@ $string['activitynotfound'] = "Activity not found";
 $string['createitemsheading'] = "Create activities, bulk actions";
 $string['actionbuttonsheading'] = "Action buttons";
 $string['credentialssettingsheading'] = "Go1 API credentials";
+$string['resetcompletion'] = 'Delete GO1 progress and completion data';
