@@ -1672,7 +1672,6 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
         if (!empty($activities)) {
             foreach ($activities as $id => $activity) {
                 $cm = $DB->get_record('course_modules', array('course' => $activity->course, 'module' => $mod->id, 'instance' => $activity->id));
-                $cmc = $DB->get_record('course_modules_completion', array('coursemoduleid' => $cm->id, 'userid' => $user->id));
 
                 // Ensure the user is enrolled in course.
                 $context = \context_course::instance($activity->course);
@@ -1680,7 +1679,13 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
                     continue;
                 }
 
-                if (!$cmc || !in_array($cmc->completionstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS])) {
+                // Use the goone_completion value, as the completion task does. The value in
+                // course_modules_completion can show complete while goone_completion is not
+                // yet 2. Moodle then makes the activity incomplete at the next calculation of
+                // the completion data.
+                $locomplete = $DB->get_field('goone_completion', 'completed',
+                    ['gooneid' => $activity->id, 'userid' => $user->id]);
+                if ($locomplete != 2) {
                     //Check viewed and mark it.
                     $lmsviewed = $DB->record_exists('course_modules_viewed', ['coursemoduleid' => $cm->id, 'userid' => $user->id]);
                     $result = [];
