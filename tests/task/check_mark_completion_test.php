@@ -112,6 +112,30 @@ final class check_mark_completion_test extends advanced_testcase {
         $this->assertSame(COMPLETION_COMPLETE, $this->state($goone, (int) $learner->id));
     }
 
+    public function test_all_pages_of_enrolments_are_processed(): void {
+        $goone = $this->make_activity('111');
+        $first = $this->make_learner(555, 'first@example.com');
+        $last = $this->make_learner(556, 'last@example.com');
+        // A full first page, then a second page with the 51st enrolment.
+        $page1 = array_fill(0, check_mark_completion::PAGESIZE,
+            ['id' => 1, 'lo_id' => 111, 'user_id' => 555, 'status' => 'completed']);
+        $page2 = [['id' => 2, 'lo_id' => 111, 'user_id' => 556, 'status' => 'completed']];
+        self::mock_api(['total' => 51, 'hits' => $page1], ['total' => 51, 'hits' => $page2]);
+
+        $this->assertTrue($this->run_task());
+
+        $this->assertSame(COMPLETION_COMPLETE, $this->state($goone, (int) $first->id));
+        $this->assertSame(COMPLETION_COMPLETE, $this->state($goone, (int) $last->id));
+    }
+
+    public function test_go1_failure_makes_the_task_fail(): void {
+        $this->make_activity('111');
+        // An empty body: a timeout, a connection error or an HTTP 5xx error page.
+        \curl::mock_response('');
+
+        $this->assertFalse($this->run_task());
+    }
+
     public function test_error_for_one_enrolment_does_not_stop_the_task(): void {
         // Activity A has an enrolment of GO1 user 888. The user lookup for 888 matches a Moodle
         // user who is already mapped to GO1 user 777, so the insert of the map fails.

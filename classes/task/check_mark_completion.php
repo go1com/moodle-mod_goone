@@ -31,6 +31,9 @@ require_once($CFG->libdir.'/accesslib.php');
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class check_mark_completion extends \core\task\scheduled_task {
+    /** @var int The number of enrolments in one GO1 response. 50 is the maximum of the GO1 API. */
+    const PAGESIZE = 50;
+
     /**
      * Get a descriptive name for this task (shown to admins).
      *
@@ -65,13 +68,24 @@ class check_mark_completion extends \core\task\scheduled_task {
                 mtrace("Skip: goone->id $goone->id has no course module");
                 continue;
             }
-            //Get enrolments completed from goone.
+            //Get enrolments completed from goone, one page at a time.
             if ($debugging) mtrace("Requesting: course $goone->course goone->id $goone->id lo_id $goone->loid");
-            $goonecompletedenrollments = bulk_mod_goone_api_custom_api_request("enrollments" , "", ['lo_ids' => $goone->loid, 'status' => 'completed', '']);
-            $apireqs++;
+            $hits = [];
+            $params = ['lo_ids' => $goone->loid, 'status' => 'completed', 'limit' => self::PAGESIZE, 'offset' => 0];
+            do {
+                $response = bulk_mod_goone_api_custom_api_request("enrollments", "", $params);
+                $apireqs++;
+                if (!isset($response['hits'])) {
+                    mtrace("Error: no enrolment list from GO1 for lo_id $goone->loid");
+                    $status = false;
+                    break;
+                }
+                $hits = array_merge($hits, $response['hits']);
+                $params['offset'] += self::PAGESIZE;
+            } while (count($response['hits']) == self::PAGESIZE && $params['offset'] < ($response['total'] ?? 0));
             $course = $DB->get_record('course', ['id' => $goone->course]);
             $completion = new \completion_info($course);
-            foreach ($goonecompletedenrollments['hits'] as $index => $hit) {
+            foreach ($hits as $index => $hit) {
                 // An error for one enrolment must not stop the task for the other enrolments.
                 try {
                     //Get user details from goone.
