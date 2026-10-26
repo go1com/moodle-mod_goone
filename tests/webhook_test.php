@@ -93,9 +93,12 @@ final class webhook_test extends advanced_testcase {
             'pass' => true, 'status' => 'completed']));
     }
 
-    private function process(array $event): void {
+    /**
+     * Process the event, and return the HTTP status code of the response to GO1.
+     */
+    private function process(array $event): int {
         $json = json_encode($event);
-        mod_goone_api_payload_process_post_request(json_decode($json, true), $json);
+        return mod_goone_api_payload_process_post_request(json_decode($json, true), $json);
     }
 
     private function go1_completed(): ?int {
@@ -144,7 +147,7 @@ final class webhook_test extends advanced_testcase {
             unset($event['data']['lo_id']);
         }
 
-        $this->process($event);
+        $this->assertSame(200, $this->process($event));
 
         $this->assertNull($this->go1_completed());
         $this->assertSame(1, self::unused_mock_responses(), 'The webhook sent a request to GO1');
@@ -194,6 +197,27 @@ final class webhook_test extends advanced_testcase {
         $this->assertSame(2, $this->go1_completed());
     }
 
+    public function test_completed_enrolment_returns_200(): void {
+        self::mock_enrolment();
+
+        $this->assertSame(200, $this->process(self::event()));
+
+        $this->assertSame(2, $this->go1_completed());
+    }
+
+    public function test_go1_api_failure_is_logged_and_gets_a_retry(): void {
+        global $DB;
+        // An empty body: a timeout, a connection error or an HTTP 5xx error page.
+        \curl::mock_response('');
+
+        // A status code that is not 2xx makes GO1 send the event again.
+        $this->assertSame(503, $this->process(self::event()));
+
+        $this->assertNull($this->go1_completed());
+        $this->assertSame([get_string('webhookgo1apierror', 'mod_goone')],
+            array_map(fn($m) => strtok($m, "\n"), array_values($DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1'))));
+    }
+
     public function test_completed_enrolment_without_pass_completes_the_activity(): void {
         self::mock_enrolment(['pass' => false, 'status' => 'completed']);
 
@@ -205,7 +229,7 @@ final class webhook_test extends advanced_testcase {
     public function test_enrolment_that_is_not_completed_does_not_complete_the_activity(): void {
         self::mock_enrolment(['pass' => true, 'status' => 'in-progress']);
 
-        $this->process(self::event());
+        $this->assertSame(200, $this->process(self::event()));
 
         $this->assertNull($this->go1_completed());
     }

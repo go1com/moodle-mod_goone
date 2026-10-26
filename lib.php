@@ -1605,6 +1605,8 @@ function mod_goone_api_payload_process_post() {
         $logobj->message_info = get_string('signaturenotconfig', 'mod_goone')."\n\n".$request;
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
+        // GO1 sends the event again, so the event is processed after the secret is configured.
+        http_response_code(503);
         return;
     }
 
@@ -1613,6 +1615,7 @@ function mod_goone_api_payload_process_post() {
         $logobj->message_info = get_string('signaturenotset', 'mod_goone')."\n\n".$request;
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
+        http_response_code(401);
         return;
     }
 
@@ -1620,10 +1623,11 @@ function mod_goone_api_payload_process_post() {
         $logobj->message_info = get_string('signaturenotmatching', 'mod_goone')."\n\n".$request;
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
+        http_response_code(401);
         return;
     }
 
-    mod_goone_api_payload_process_post_request(json_decode($request, true), $request);
+    http_response_code(mod_goone_api_payload_process_post_request(json_decode($request, true), $request));
 }
 
 /**
@@ -1666,9 +1670,10 @@ function mod_goone_api_payload_signature_valid(string $request, string $header, 
  * @param array $la_postjson - Decoded JSON request
  * @param mixed $request - Original JSON request (to append in log)
  *
- * @return void
+ * @return int The HTTP status code for the response to GO1. A code that is not 2xx makes GO1 send
+ *     the event again.
  */
-function mod_goone_api_payload_process_post_request($la_postjson, $request): void {
+function mod_goone_api_payload_process_post_request($la_postjson, $request): int {
     global $DB;
 
     $logobj = new stdClass;
@@ -1677,18 +1682,23 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
     // the subscription is changed in GO1. They are ignored without a log row, so that they cannot
     // fill the log.
     if (($la_postjson['event_type'] ?? '') !== 'enrollment.complete') {
-        return;
+        return 200;
     }
 
     // Without an enrolment ID, the GO1 request below asks for the list of all enrolments.
     if (empty($la_postjson['data']['id']) || empty($la_postjson['data']['lo_id'])) {
         mod_goone_webhook_log(get_string('webhookinvaliddata', 'mod_goone') . "\n\n" . $request);
-        return;
+        return 200;
     }
 
     $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
+    if (!isset($enrolinfo['status'])) {
+        // No enrolment from GO1: a timeout, a connection error or an error response.
+        mod_goone_webhook_log(get_string('webhookgo1apierror', 'mod_goone') . "\n\n" . $request);
+        return 503;
+    }
     if (!mod_goone_enrolment_is_completed($enrolinfo)) {
-        return;
+        return 200;
     }
     $user = goone_get_moodle_user($enrolinfo['user_id']);
 
@@ -1745,6 +1755,7 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
     }
+    return 200;
 }
 
 
