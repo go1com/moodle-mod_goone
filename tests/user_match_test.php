@@ -146,6 +146,34 @@ final class user_match_test extends advanced_testcase {
         $this->assertNull(self::mapped_userid(888));
     }
 
+    public function test_second_go1_account_with_same_email_is_refused(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user(['email' => 'jane@example.com']);
+        $DB->insert_record('goone_usermap', ['userid' => $user->id, 'gooneuserid' => 777, 'timecreated' => time()]);
+        self::mock_go1_user(888, 'jane@example.com', 'Jane', 'Learner');
+
+        $this->assertFalse(goone_get_moodle_user(888));
+
+        $this->assertNull(self::mapped_userid(888));
+        $this->assertSame((int) $user->id, self::mapped_userid(777));
+        $expected = get_string('useralreadymapped', 'mod_goone',
+            (object) ['gooneuserid' => 888, 'userid' => $user->id, 'mappedgooneuserid' => 777]);
+        $this->assertSame([$expected], array_values($DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1')));
+    }
+
+    public function test_second_go1_namesake_is_refused(): void {
+        $user = $this->getDataGenerator()->create_user(['firstname' => 'John', 'lastname' => 'Smith']);
+        // Two different GO1 users with the same name, and emails that Moodle does not know.
+        self::mock_go1_user(901, 'john@company-a.example', 'John', 'Smith');
+        $this->assertEquals($user->id, goone_get_moodle_user(901)->id);
+        self::mock_go1_user(902, 'john@company-b.example', 'John', 'Smith');
+
+        $this->assertFalse(goone_get_moodle_user(902));
+
+        $this->assertSame((int) $user->id, self::mapped_userid(901));
+        $this->assertNull(self::mapped_userid(902));
+    }
+
     public function test_name_match_with_two_active_namesakes_maps_nobody(): void {
         $this->getDataGenerator()->create_user(['firstname' => 'Jane', 'lastname' => 'Learner']);
         $this->getDataGenerator()->create_user(['firstname' => 'Jane', 'lastname' => 'Learner']);

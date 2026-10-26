@@ -937,11 +937,31 @@ function goone_get_moodle_user($gooneuserid) {
     }
 
     if ($user) {
+        // A Moodle user has only one GO1 user. When another GO1 user is already mapped to
+        // this Moodle user, the code cannot know which GO1 user is the correct one.
+        $mappedgooneuserid = $DB->get_field('goone_usermap', 'gooneuserid', ['userid' => $user->id]);
+        if ($mappedgooneuserid !== false) {
+            mod_goone_webhook_log(get_string('useralreadymapped', 'mod_goone', (object) [
+                'gooneuserid' => $gooneuserid,
+                'userid' => $user->id,
+                'mappedgooneuserid' => $mappedgooneuserid,
+            ]));
+            return false;
+        }
         $r = new \stdClass();
         $r->gooneuserid = $gooneuserid;
         $r->timecreated = time();
         $r->userid = $user->id;
-        $DB->insert_record('goone_usermap', $r);
+        try {
+            $DB->insert_record('goone_usermap', $r);
+        } catch (dml_write_exception $e) {
+            // Another request for the same GO1 user can store the map first. Any other error is real.
+            $row = $DB->get_record('goone_usermap', ['gooneuserid' => $gooneuserid]);
+            if (!$row) {
+                throw $e;
+            }
+            return $DB->get_record('user', ['id' => $row->userid]);
+        }
         return $user;
     } else {
         return false;

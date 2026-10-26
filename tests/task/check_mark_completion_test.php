@@ -46,6 +46,9 @@ final class check_mark_completion_test extends advanced_testcase {
     /** @var \stdClass */
     private $course;
 
+    /** @var string The output of the last task run. */
+    private $output = '';
+
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
@@ -91,7 +94,7 @@ final class check_mark_completion_test extends advanced_testcase {
     private function run_task(): bool {
         ob_start();
         $status = (new check_mark_completion())->execute();
-        ob_end_clean();
+        $this->output = ob_get_clean();
         return $status;
     }
 
@@ -137,23 +140,24 @@ final class check_mark_completion_test extends advanced_testcase {
     }
 
     public function test_error_for_one_enrolment_does_not_stop_the_task(): void {
-        // Activity A has an enrolment of GO1 user 888. The user lookup for 888 matches a Moodle
-        // user who is already mapped to GO1 user 777, so the insert of the map fails.
+        // Activity A has an enrolment with a GO1 user ID that is not a number. The user map
+        // cannot store it, so the database gives an error.
         $goonea = $this->make_activity('111');
-        $this->make_learner(777, 'jane@example.com');
+        $this->getDataGenerator()->create_and_enrol($this->course, 'student', ['email' => 'jane@example.com']);
         // Activity B has a normal completed enrolment.
         $gooneb = $this->make_activity('222');
-        $other = $this->make_learner(555, 'other@example.com');
+        $learner = $this->make_learner(555, 'learner@example.com');
         self::mock_api(
-            ['total' => 1, 'hits' => [['id' => 1, 'lo_id' => 111, 'user_id' => 888, 'status' => 'completed']]],
-            ['id' => 888, 'email' => 'jane@example.com', 'first_name' => 'Jane', 'last_name' => 'Learner'],
+            ['total' => 1, 'hits' => [['id' => 1, 'lo_id' => 111, 'user_id' => 'not-a-number', 'status' => 'completed']]],
+            ['id' => 'not-a-number', 'email' => 'jane@example.com', 'first_name' => 'Jane', 'last_name' => 'Learner'],
             ['total' => 1, 'hits' => [['id' => 2, 'lo_id' => 222, 'user_id' => 555, 'status' => 'completed']]],
         );
 
         $status = $this->run_task();
 
-        $this->assertSame(COMPLETION_COMPLETE, $this->state($gooneb, (int) $other->id));
+        $this->assertSame(COMPLETION_COMPLETE, $this->state($gooneb, (int) $learner->id));
         $this->assertFalse($status);
+        $this->assertStringContainsString('Error: lo_id 111 GO1 user not-a-number: ', $this->output);
         $this->assertLessThan($gooneb->id, $goonea->id);
     }
 
