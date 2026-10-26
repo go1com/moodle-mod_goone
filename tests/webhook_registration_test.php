@@ -40,12 +40,15 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
  *
  * @covers ::mod_goone_check_webhook
  * @covers ::mod_goone_create_webhook
+ * @covers ::mod_goone_send_webhook_request
  */
 final class webhook_registration_test extends advanced_testcase {
 
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
+        // The queue of GO1 responses is static. Start with an empty queue.
+        self::unused_mock_responses();
         // A valid token prevents a token request.
         set_config('token', 'token', 'mod_goone');
         set_config('token_time', time(), 'mod_goone');
@@ -123,14 +126,61 @@ final class webhook_registration_test extends advanced_testcase {
         $this->assertStringNotContainsString(get_config('mod_goone', 'goone_api_secret'), self::logs());
     }
 
-    public function test_existing_webhook_of_this_site_is_not_created_again(): void {
+    public function test_existing_webhook_of_this_site_is_repaired(): void {
         global $CFG;
         self::mock_api(self::webhook_list($CFG->wwwroot . '/mod/goone/payload.php'), self::created_response());
 
-        $this->assertSame('webhookcreated', mod_goone_create_webhook());
+        $this->assertSame('webhookrepaired', mod_goone_create_webhook());
+
+        $this->assertNotSame('old secret', get_config('mod_goone', 'goone_api_secret'));
+        $this->assertSame(0, self::unused_mock_responses());
+    }
+
+    public function test_log_of_the_repair_has_no_secret(): void {
+        global $CFG;
+        self::mock_api(self::webhook_list($CFG->wwwroot . '/mod/goone/payload.php'), self::created_response());
+
+        mod_goone_create_webhook();
+
+        $this->assertStringContainsString('new-id', self::logs());
+        $this->assertStringNotContainsString('the new secret', self::logs());
+        $this->assertStringNotContainsString(get_config('mod_goone', 'goone_api_secret'), self::logs());
+    }
+
+    public function test_rejected_repair_keeps_the_secret(): void {
+        global $CFG;
+        self::mock_api(self::webhook_list($CFG->wwwroot . '/mod/goone/payload.php'), json_encode(['message' => 'Forbidden']));
+
+        $this->assertSame('webhookrepairerror', mod_goone_create_webhook());
 
         $this->assertSame('old secret', get_config('mod_goone', 'goone_api_secret'));
-        $this->assertSame(1, self::unused_mock_responses(), 'The code sent a create request');
+        $this->assertStringContainsString('Forbidden', self::logs());
+    }
+
+    /**
+     * @covers ::mod_goone_webhook_repair_payload
+     */
+    public function test_repair_payload_keeps_other_events_and_adds_completion_event(): void {
+        $webhook = ['id' => 'abc', 'event_types' => ['enrollment.create', 'content.update'], 'status' => 'inactive'];
+
+        $payload = mod_goone_webhook_repair_payload($webhook, 'new secret');
+
+        $this->assertSame([
+            'secret_key' => 'new secret',
+            'event_types' => ['enrollment.create', 'content.update', 'enrollment.complete'],
+            'status' => 'active',
+        ], $payload);
+    }
+
+    /**
+     * @covers ::mod_goone_webhook_repair_payload
+     */
+    public function test_repair_payload_does_not_repeat_completion_event(): void {
+        $webhook = ['id' => 'abc', 'event_types' => ['enrollment.complete']];
+
+        $payload = mod_goone_webhook_repair_payload($webhook, 'new secret');
+
+        $this->assertSame(['enrollment.complete'], $payload['event_types']);
     }
 
     public function test_failed_list_request_creates_no_webhook(): void {

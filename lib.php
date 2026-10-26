@@ -1813,10 +1813,70 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): int
 
 
 /**
- * Create the GO1 webhook of this site, if it does not exist.
+ * Return the body of the request that repairs the GO1 webhook of this site.
  *
- * The new signing secret is stored only after GO1 has accepted the webhook. Thus a failed request
- * does not change the secret of a webhook that works.
+ * The webhook gets a new secret and becomes active. enrollment.complete is added to its event types.
+ * The other event types stay, because another integration can use them.
+ *
+ * @param array $webhook The GO1 webhook, as mod_goone_check_webhook() returns it.
+ * @param string $secret The new secret.
+ * @return array The request body.
+ */
+function mod_goone_webhook_repair_payload(array $webhook, string $secret): array {
+    $eventtypes = $webhook['event_types'] ?? [];
+    if (!in_array('enrollment.complete', $eventtypes)) {
+        $eventtypes[] = 'enrollment.complete';
+    }
+    return [
+        'secret_key' => $secret,
+        'event_types' => array_values($eventtypes),
+        'status' => 'active',
+    ];
+}
+
+/**
+ * Send a request that sets the secret of the GO1 webhook of this site.
+ *
+ * The new secret is stored only after GO1 has accepted the request. Thus a failed request does not
+ * change the secret of a webhook that works.
+ *
+ * @param string $method 'post' to create the webhook, or 'patch' to update it.
+ * @param string $url The GO1 URL of the request.
+ * @param array $payload The request body. It holds the new secret.
+ * @param string $secret The new secret.
+ * @return bool True if GO1 accepted the request.
+ */
+function mod_goone_send_webhook_request(string $method, string $url, array $payload, string $secret): bool {
+    $curl = new curl();
+    $curl->setHeader(array(
+        'Content-Type: application/json',
+        'Authorization: Bearer '.get_config('mod_goone', 'token'),
+        'Api-Version: 2022-07-01',
+    ));
+    $response = (string) $curl->$method($url, json_encode($payload));
+
+    // GO1 returns the secret in the response. The log must not show it.
+    $result = json_decode($response, true);
+    $logged = is_array($result) ? json_encode(array_diff_key($result, ['secret_key' => true]))
+        : mod_goone_webhook_log_excerpt($response);
+    $request = strtoupper($method) . ' ' . $url;
+    $httpcode = $curl->get_info()['http_code'] ?? 0;
+    if ($curl->get_errno() || $httpcode < 200 || $httpcode >= 300 || empty($result['id'])) {
+        $error = $curl->get_errno() ? 'Error: ' . $curl->error : $logged;
+        mod_goone_webhook_log(get_string('webhookrequestfailed', 'mod_goone', $request) . "\n\n" . $error);
+        return false;
+    }
+
+    set_config('goone_api_secret', $secret, 'mod_goone');
+    mod_goone_webhook_log(get_string('webhookrequestaccepted', 'mod_goone', $request) . "\n\n" . $logged);
+    return true;
+}
+
+/**
+ * Create the GO1 webhook of this site, or repair it when it exists.
+ *
+ * The repair gives the webhook a new secret, so that a lost or changed secret in Moodle agrees with
+ * GO1 again.
  *
  * @return string The name of the language string that describes the result.
  */
@@ -1824,50 +1884,33 @@ function mod_goone_create_webhook(): string {
     global $CFG;
 
     try {
-        if (mod_goone_check_webhook()) {
-            return 'webhookcreated';
-        }
+        $webhook = mod_goone_check_webhook();
     } catch (moodle_exception $e) {
         mod_goone_webhook_log(get_string('webhookcurlerror', 'mod_goone'));
         return 'webhookcurlerror';
     }
 
     goone_tokentest();
-    $token = get_config('mod_goone', 'token');
-    if (empty($token)) {
+    if (empty(get_config('mod_goone', 'token'))) {
         mod_goone_webhook_log(get_string('tokennotdefined', 'mod_goone'));
         return 'tokennotdefined';
     }
 
     $secret = bulk_mod_goone_create_api_secret_key();
-    $curl = new curl();
-    $curl->setHeader(array(
-        'Content-Type: application/json',
-        'Authorization: Bearer '.$token,
-        'Api-Version: 2022-07-01',
-    ));
-    $payload = json_encode(array(
+    if ($webhook) {
+        $url = 'https://gateway.go1.com/webhooks/' . rawurlencode((string) $webhook['id']);
+        $repaired = mod_goone_send_webhook_request('patch', $url, mod_goone_webhook_repair_payload($webhook, $secret), $secret);
+        return $repaired ? 'webhookrepaired' : 'webhookrepairerror';
+    }
+
+    $payload = array(
         'name' => 'Open LMS webhook for course completion',
         'url' => $CFG->wwwroot . '/mod/goone/payload.php',
         'secret_key' => $secret,
         'event_types' => array('enrollment.complete'),
-    ));
-    $response = (string) $curl->post('https://gateway.go1.com/webhooks', $payload);
-
-    // GO1 returns the secret in the response. The log must not show it.
-    $result = json_decode($response, true);
-    $logged = is_array($result) ? json_encode(array_diff_key($result, ['secret_key' => true]))
-        : mod_goone_webhook_log_excerpt($response);
-    $httpcode = $curl->get_info()['http_code'] ?? 0;
-    if ($curl->get_errno() || $httpcode < 200 || $httpcode >= 300 || empty($result['id'])) {
-        $error = $curl->get_errno() ? 'Error: ' . $curl->error : $logged;
-        mod_goone_webhook_log(get_string('webhookcurlerror', 'mod_goone') . "\n\n" . $error);
-        return 'webhookcurlerror';
-    }
-
-    set_config('goone_api_secret', $secret, 'mod_goone');
-    mod_goone_webhook_log(get_string('webhooknewcreatedgood', 'mod_goone') . "\n\n" . $logged);
-    return 'webhooknewcreatedgood';
+    );
+    $created = mod_goone_send_webhook_request('post', 'https://gateway.go1.com/webhooks', $payload, $secret);
+    return $created ? 'webhooknewcreatedgood' : 'webhookcurlerror';
 }
 
 function mod_goone_create_webhook_api_request() {
