@@ -105,5 +105,19 @@ function xmldb_goone_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026101501, 'goone');
     }
 
+    if ($oldversion < 2026102602) {
+        // Add the user of a log row, so that the privacy provider can find the rows of a user.
+        $table = new xmldb_table('goone_webhook_logs');
+        $field = new xmldb_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'timecreated');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('userid', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        upgrade_mod_savepoint(true, 2026102602, 'goone');
+    }
+
     return true;
 }

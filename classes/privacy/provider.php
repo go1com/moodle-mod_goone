@@ -70,6 +70,36 @@ class provider implements
             'privacy:metadata:goone_completion'
         );
 
+        $items->add_database_table(
+            'goone_usermap',
+            [
+                'userid' => 'privacy:metadata:goone_usermap:userid',
+                'gooneuserid' => 'privacy:metadata:goone_usermap:gooneuserid',
+                'timecreated' => 'privacy:metadata:goone_usermap:timecreated',
+            ],
+            'privacy:metadata:goone_usermap'
+        );
+
+        $items->add_database_table(
+            'goone_webhook_logs',
+            [
+                'userid' => 'privacy:metadata:goone_webhook_logs:userid',
+                'message_info' => 'privacy:metadata:goone_webhook_logs:message_info',
+                'timecreated' => 'privacy:metadata:goone_webhook_logs:timecreated',
+            ],
+            'privacy:metadata:goone_webhook_logs'
+        );
+
+        // The SCORM data model of the GO1 player has the username and the full name (goone_scorm_def()).
+        $items->add_external_location_link(
+            'go1',
+            [
+                'username' => 'privacy:metadata:go1:username',
+                'fullname' => 'privacy:metadata:go1:fullname',
+            ],
+            'privacy:metadata:go1'
+        );
+
         return $items;
     }
 
@@ -97,6 +127,21 @@ class provider implements
         $contextlist = new contextlist();
         $contextlist->add_from_sql($sql, $params);
 
+        // The GO1 user map and the log rows of the user are in the user context.
+        $sql = "SELECT c.id
+                  FROM {context} c
+                 WHERE c.contextlevel = :contextlevel
+                       AND c.instanceid = :userid
+                       AND (EXISTS (SELECT 1 FROM {goone_usermap} um WHERE um.userid = :mapuserid)
+                            OR EXISTS (SELECT 1 FROM {goone_webhook_logs} wl WHERE wl.userid = :loguserid))";
+        $params = [
+            'contextlevel' => CONTEXT_USER,
+            'userid' => $userid,
+            'mapuserid' => $userid,
+            'loguserid' => $userid,
+        ];
+        $contextlist->add_from_sql($sql, $params);
+
         return $contextlist;
     }
 
@@ -106,7 +151,17 @@ class provider implements
      * @param   userlist    $userlist   The userlist containing the list of users who have data in this context/plugin combination.
      */
     public static function get_users_in_context(userlist $userlist) {
+        global $DB;
+
         $context = $userlist->get_context();
+
+        if ($context instanceof \context_user) {
+            if ($DB->record_exists('goone_usermap', ['userid' => $context->instanceid])
+                    || $DB->record_exists('goone_webhook_logs', ['userid' => $context->instanceid])) {
+                $userlist->add_user($context->instanceid);
+            }
+            return;
+        }
 
         if (!$context instanceof \context_module) {
             return;
@@ -192,6 +247,49 @@ class provider implements
             $context = \context_module::instance($lastcmid);
             self::export_goone_data_for_user($goonedata, $context, $user);
         }
+
+        $usercontext = \context_user::instance($user->id);
+        if (in_array($usercontext->id, $contextlist->get_contextids())) {
+            self::export_user_context_data($usercontext, (int) $user->id);
+        }
+    }
+
+    /**
+     * Export the GO1 user map and the log rows of a user.
+     *
+     * @param \context_user $context the context of the user.
+     * @param int $userid the user ID.
+     */
+    protected static function export_user_context_data(\context_user $context, int $userid) {
+        global $DB;
+
+        $subcontext = [get_string('pluginname', 'mod_goone')];
+        if ($map = $DB->get_record('goone_usermap', ['userid' => $userid])) {
+            writer::with_context($context)->export_data($subcontext, (object) [
+                'gooneuserid' => $map->gooneuserid,
+                'timecreated' => \core_privacy\local\request\transform::datetime($map->timecreated),
+            ]);
+        }
+        $logs = $DB->get_records('goone_webhook_logs', ['userid' => $userid], 'timecreated, id');
+        if ($logs) {
+            $rows = array_map(fn($log) => (object) [
+                'message_info' => $log->message_info,
+                'timecreated' => \core_privacy\local\request\transform::datetime($log->timecreated),
+            ], array_values($logs));
+            writer::with_context($context)->export_related_data($subcontext, 'webhook_logs', (object) ['rows' => $rows]);
+        }
+    }
+
+    /**
+     * Delete the GO1 user map and the log rows of a user.
+     *
+     * @param int $userid the user ID.
+     */
+    protected static function delete_user_context_data(int $userid) {
+        global $DB;
+
+        $DB->delete_records('goone_usermap', ['userid' => $userid]);
+        $DB->delete_records('goone_webhook_logs', ['userid' => $userid]);
     }
 
     /**
@@ -221,6 +319,11 @@ class provider implements
     public static function delete_data_for_all_users_in_context(\context $context) {
         global $DB;
 
+        if ($context instanceof \context_user) {
+            self::delete_user_context_data((int) $context->instanceid);
+            return;
+        }
+
         if (!$context instanceof \context_module) {
             return;
         }
@@ -245,6 +348,11 @@ class provider implements
         $userid = $contextlist->get_user()->id;
         foreach ($contextlist->get_contexts() as $context) {
 
+            if ($context instanceof \context_user && $context->instanceid == $userid) {
+                self::delete_user_context_data((int) $userid);
+                continue;
+            }
+
             if (!$context instanceof \context_module) {
                 continue;
             }
@@ -265,6 +373,13 @@ class provider implements
         global $DB;
 
         $context = $userlist->get_context();
+
+        if ($context instanceof \context_user) {
+            if (in_array($context->instanceid, $userlist->get_userids())) {
+                self::delete_user_context_data((int) $context->instanceid);
+            }
+            return;
+        }
 
         if (!$context instanceof \context_module) {
             return;

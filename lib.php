@@ -945,7 +945,7 @@ function goone_get_moodle_user($gooneuserid) {
                 'gooneuserid' => $gooneuserid,
                 'userid' => $user->id,
                 'mappedgooneuserid' => $mappedgooneuserid,
-            ]));
+            ]), (int) $user->id);
             return false;
         }
         $r = new \stdClass();
@@ -1560,10 +1560,12 @@ function mod_goone_enrolment_is_completed(?array $enrolment): bool {
  * Write a row to the GO1 webhook log.
  *
  * @param string $message The message.
+ * @param int|null $userid The Moodle user that the row is about. The privacy provider uses it.
  */
-function mod_goone_webhook_log(string $message): void {
+function mod_goone_webhook_log(string $message, ?int $userid = null): void {
     global $DB;
-    $DB->insert_record('goone_webhook_logs', (object) ['message_info' => $message, 'timecreated' => time()]);
+    $DB->insert_record('goone_webhook_logs', (object) ['message_info' => $message, 'timecreated' => time(),
+        'userid' => $userid]);
 }
 
 /**
