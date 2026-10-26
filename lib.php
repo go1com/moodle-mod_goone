@@ -211,7 +211,8 @@ function goone_delete_instance($id) {
  */
 function goone_reset_course_form_definition(&$mform) {
     $mform->addElement('header', 'gooneheader', get_string('modulenameplural', 'goone'));
-    $mform->addElement('advcheckbox', 'reset_goone_completion', get_string('resetcompletion', 'goone'));
+    $mform->addElement('advcheckbox', 'reset_goone_completion',
+        get_string('resetcompletionformlabel', 'goone'));
 }
 
 /**
@@ -221,7 +222,9 @@ function goone_reset_course_form_definition(&$mform) {
  * @return array The default values.
  */
 function goone_reset_course_form_defaults($course) {
-    return array('reset_goone_completion' => 1);
+    // The site setting "On course reset" gives the first value of the option.
+    // A teacher can change it for each reset.
+    return array('reset_goone_completion' => (int)get_config('mod_goone', 'resetcompletion'));
 }
 
 /**
@@ -232,8 +235,9 @@ function goone_reset_course_form_defaults($course) {
  * stay. The completion rule reads those rows, thus a learner became complete
  * again when the learner opened the activity after the reset.
  *
- * The data is also removed when the teacher asks to delete the completion data,
- * because the GO1 rows are part of that data.
+ * The site setting "On course reset" gives the first value of the option on the
+ * reset form. The default keeps the GO1 records. A teacher can change the option
+ * for each reset, and only that option decides what this function does.
  *
  * @param object $data The data from the reset form.
  * @return array One record for each item that this function removed.
@@ -242,7 +246,11 @@ function goone_reset_userdata($data) {
     global $DB;
 
     $status = array();
-    if (empty($data->reset_goone_completion) && empty($data->reset_completion)) {
+    // Only the option on the form decides this. The option already holds the
+    // value of the site setting, thus the teacher sees what will happen and can
+    // change it. The "Delete completion data" option of Moodle does not remove
+    // the GO1 records on its own: a site can keep them on purpose.
+    if (empty($data->reset_goone_completion)) {
         return $status;
     }
 
@@ -251,7 +259,7 @@ function goone_reset_userdata($data) {
 
     $status[] = array(
         'component' => get_string('modulenameplural', 'goone'),
-        'item' => get_string('resetcompletion', 'goone'),
+        'item' => get_string('resetcompletionformlabel', 'goone'),
         'error' => false,
     );
     return $status;

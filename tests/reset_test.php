@@ -154,18 +154,98 @@ class reset_test extends advanced_testcase {
     }
 
     /**
-     * Asking to delete the completion data must also remove the GO1 progress.
+     * The option of Moodle to delete the completion data must not act on its own.
      *
-     * The GO1 rows are completion data. If they stay, the plugin and Moodle do
-     * not agree after the reset.
+     * A site can keep the GO1 records on purpose. Only the GO1 option decides.
      */
-    public function test_the_completion_option_removes_the_progress(): void {
+    public function test_the_moodle_completion_option_alone_keeps_the_progress(): void {
         $this->assertEquals(1, $this->rows());
 
         $this->reset_course(['reset_completion' => 1]);
 
-        $this->assertEquals(0, $this->rows(),
-            'A reset that deletes the completion data must also remove the GO1 rows.');
+        $this->assertEquals(1, $this->rows(),
+            'Only the GO1 option may remove the GO1 rows.');
+    }
+
+    /**
+     * Gives the two values of the site setting.
+     *
+     * @return array[] The setting value, and the wanted default of the form option.
+     */
+    public static function setting_provider(): array {
+        return [
+            'keep the records' => ['0', 0],
+            'remove the records' => ['1', 1],
+        ];
+    }
+
+    /**
+     * The form option must start with the value of the site setting.
+     *
+     * @param string $setting The value of the site setting.
+     * @param int $expected The wanted default of the form option.
+     * @dataProvider setting_provider
+     */
+    public function test_the_form_default_follows_the_setting(string $setting, int $expected): void {
+        set_config('resetcompletion', $setting, 'mod_goone');
+
+        $defaults = goone_reset_course_form_defaults($this->course);
+
+        $this->assertArrayHasKey('reset_goone_completion', $defaults);
+        $this->assertSame($expected, $defaults['reset_goone_completion'],
+            'The reset form must start with the value of the "On course reset" setting.');
+    }
+
+    /**
+     * The default of the site setting must keep the records.
+     */
+    public function test_the_setting_defaults_to_keeping_the_records(): void {
+        unset_config('resetcompletion', 'mod_goone');
+
+        $defaults = goone_reset_course_form_defaults($this->course);
+
+        $this->assertSame(0, $defaults['reset_goone_completion'],
+            'With no value set, the reset form must not offer to remove the GO1 records.');
+    }
+
+    /**
+     * With the setting on "keep", a reset leaves the two records different.
+     *
+     * This is the result that the site chooses. Moodle forgets the completion,
+     * the GO1 record stays, and the learner becomes complete again at the next
+     * view. The description of the setting says so.
+     */
+    public function test_keeping_the_records_lets_the_learner_complete_again(): void {
+        set_config('resetcompletion', '0', 'mod_goone');
+
+        $this->reset_course(array_merge(
+            ['reset_completion' => 1], goone_reset_course_form_defaults($this->course)));
+
+        $this->assertEquals(1, $this->rows(), 'The GO1 records must stay.');
+        $this->assertEquals(COMPLETION_COMPLETE, $this->rule_state(),
+            'The GO1 rule still reports the learner as complete.');
+
+        $completion = new completion_info($this->course);
+        $modinfo = get_fast_modinfo($this->course, $this->user->id);
+        $completion->set_module_viewed($modinfo->get_cm($this->cm->id), (int)$this->user->id);
+
+        $modinfo = get_fast_modinfo($this->course, $this->user->id);
+        $data = $completion->get_data($modinfo->get_cm($this->cm->id), false, (int)$this->user->id);
+        $this->assertEquals(COMPLETION_COMPLETE, (int)$data->completionstate,
+            'With the records kept, the learner becomes complete again at the next view.');
+    }
+
+    /**
+     * With the setting on "remove", a reset clears the records.
+     */
+    public function test_removing_the_records_clears_them(): void {
+        set_config('resetcompletion', '1', 'mod_goone');
+
+        $this->reset_course(array_merge(
+            ['reset_completion' => 1], goone_reset_course_form_defaults($this->course)));
+
+        $this->assertEquals(0, $this->rows(), 'The GO1 records must go.');
+        $this->assertEquals(COMPLETION_INCOMPLETE, $this->rule_state());
     }
 
     /**

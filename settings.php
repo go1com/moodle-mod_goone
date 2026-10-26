@@ -86,6 +86,16 @@ if ($ADMIN->fulltree) {
             )
         ));
 
+        $settings->add(new admin_setting_heading('othersettings',
+            get_string('othersettingsheading', 'goone'), ''));
+
+        $settings->add(new admin_setting_configselect('mod_goone/resetcompletion',
+            get_string('resetcompletion', 'goone'), get_string('resetcompletiondesc', 'goone'), '0',
+            array('0' => get_string('resetcompletionkeep', 'goone'),
+                '1' => get_string('resetcompletionremove', 'goone')
+            )
+        ));
+
         $settings->add(new admin_setting_heading('partnersettings',
             get_string('partnersettingheading', 'goone'), ''));
 

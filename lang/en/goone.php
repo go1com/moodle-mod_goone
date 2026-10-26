@@ -151,4 +151,15 @@ $string['activitynotfound'] = "Activity not found";
 $string['createitemsheading'] = "Create activities, bulk actions";
 $string['actionbuttonsheading'] = "Action buttons";
 $string['credentialssettingsheading'] = "Go1 API credentials";
-$string['resetcompletion'] = 'Delete GO1 progress and completion data';
+$string['othersettingsheading'] = 'Other settings';
+$string['resetcompletion'] = 'On course reset';
+$string['resetcompletiondesc'] = 'What to do with the GO1 progress of the learners when a teacher resets a course.
+
+This setting gives the value that the course reset form shows first. A teacher can change it for each reset.
+
+<b>Do not reset GO1 completions</b> keeps the record of each learner. Note that a reset still deletes the completion data of Moodle. The two records are then different: the activity shows as not complete, but the GO1 record still shows the learning object as finished. A learner who opens the activity again becomes complete at once, without looking at the content.
+
+<b>Reset GO1 completions</b> removes the GO1 record of each learner in that course. A learner must then finish the learning object again.';
+$string['resetcompletionkeep'] = 'Do not reset GO1 completions';
+$string['resetcompletionremove'] = 'Reset GO1 completions';
+$string['resetcompletionformlabel'] = 'Reset GO1 completions';
