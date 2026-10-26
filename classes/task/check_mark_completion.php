@@ -88,6 +88,9 @@ class check_mark_completion extends \core\task\scheduled_task {
             foreach ($hits as $index => $hit) {
                 // An error for one enrolment must not stop the task for the other enrolments.
                 try {
+                    if (!mod_goone_enrolment_is_completed($hit)) {
+                        continue;
+                    }
                     //Get user details from goone.
                     if (($user = goone_get_moodle_user($hit['user_id'])) == false) {
                         continue;

@@ -105,6 +105,22 @@ final class webhook_test extends advanced_testcase {
         return $completed === false ? null : (int) $completed;
     }
 
+    public function test_completed_enrolment_without_pass_completes_the_activity(): void {
+        self::mock_enrolment(['pass' => false, 'status' => 'completed']);
+
+        $this->process(self::event());
+
+        $this->assertSame(2, $this->go1_completed());
+    }
+
+    public function test_enrolment_that_is_not_completed_does_not_complete_the_activity(): void {
+        self::mock_enrolment(['pass' => true, 'status' => 'in-progress']);
+
+        $this->process(self::event());
+
+        $this->assertNull($this->go1_completed());
+    }
+
     public function test_completion_is_recorded_when_activity_already_shows_complete(): void {
         global $DB;
         // The activity shows complete, but goone_completion has no record, for example after a

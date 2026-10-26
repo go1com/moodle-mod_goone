@@ -1544,6 +1544,19 @@ function mod_goone_check_webhook() {
 }
 
 /**
+ * Check if a GO1 enrolment is completed.
+ *
+ * The webhook and the completion task use this rule. The pass value is not used: a learner who
+ * finished the learning object completes the activity, also without a pass.
+ *
+ * @param array|null $enrolment The GO1 enrolment.
+ * @return bool True if the enrolment is completed.
+ */
+function mod_goone_enrolment_is_completed(?array $enrolment): bool {
+    return ($enrolment['status'] ?? '') === 'completed';
+}
+
+/**
  * Write a row to the GO1 webhook log.
  *
  * @param string $message The message.
@@ -1661,7 +1674,7 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
     $logobj = new stdClass;
 
     $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
-    if (empty($enrolinfo['pass'])) {
+    if (!mod_goone_enrolment_is_completed($enrolinfo)) {
         return;
     }
     $user = goone_get_moodle_user($enrolinfo['user_id']);

@@ -115,6 +115,16 @@ final class check_mark_completion_test extends advanced_testcase {
         $this->assertSame(COMPLETION_COMPLETE, $this->state($goone, (int) $learner->id));
     }
 
+    public function test_enrolment_that_is_not_completed_is_skipped(): void {
+        $goone = $this->make_activity('111');
+        $learner = $this->make_learner(555, 'learner@example.com');
+        self::mock_api(['total' => 1, 'hits' => [['id' => 1, 'lo_id' => 111, 'user_id' => 555, 'status' => 'in-progress']]]);
+
+        $this->assertTrue($this->run_task());
+
+        $this->assertNull($this->state($goone, (int) $learner->id));
+    }
+
     public function test_all_pages_of_enrolments_are_processed(): void {
         $goone = $this->make_activity('111');
         $first = $this->make_learner(555, 'first@example.com');
