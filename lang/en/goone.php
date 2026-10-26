@@ -152,6 +152,7 @@ $string['signaturenotmatching'] = "Signature not matching";
 $string['signaturenotset'] = "Signature not found in request";
 $string['signaturenotconfig'] = "Signature not found in Moodle config";
 $string['webhookgo1apierror'] = 'The GO1 API did not return the enrolment. GO1 will send the event again.';
+$string['webhooksuccess'] = 'Success. User: {$a->userid}, course: {$a->courseid}, cm {$a->cmid}, set {$a->result}';
 $string['webhookinvaliddata'] = 'The webhook event has no enrolment ID or no learning object ID. The event was ignored.';
 $string['webhookcreated'] = "Client already have a webhook created!";
 $string['payloadheading'] = "Secret key used on webhook to sign the requests";

@@ -1765,12 +1765,13 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): int
                         goone_set_completion($cm, $user->id, '', "completed");
                         $result[] = 'completed';
                     }
-                    /*
-                    $resultstr = implode(',', $result);
-                    $logobj->message_info = "Success. User: {$user->id}, course: {$activity->course}, cm {$cm->id}, set {$resultstr}\n\n".$request;
-                    $logobj->timecreated = time();
-                    $DB->insert_record('goone_webhook_logs', $logobj);
-                    */
+                    $message = get_string('webhooksuccess', 'mod_goone', (object) [
+                        'userid' => $user->id,
+                        'courseid' => $activity->course,
+                        'cmid' => $cm->id,
+                        'result' => implode(',', $result),
+                    ]);
+                    mod_goone_webhook_log($message . "\n\n" . $request, (int) $user->id);
                 }
             }
         } else {

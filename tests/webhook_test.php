@@ -205,6 +205,19 @@ final class webhook_test extends advanced_testcase {
         $this->assertSame(2, $this->go1_completed());
     }
 
+    public function test_completion_writes_a_success_log_row(): void {
+        global $DB;
+        self::mock_enrolment();
+
+        $this->process(self::event());
+
+        $log = $DB->get_record('goone_webhook_logs', []);
+        $expected = get_string('webhooksuccess', 'mod_goone', (object) ['userid' => $this->student->id,
+            'courseid' => $this->course->id, 'cmid' => $this->goone->cmid, 'result' => 'viewed,completed']);
+        $this->assertSame($expected, strtok($log->message_info, "\n"));
+        $this->assertEquals($this->student->id, $log->userid);
+    }
+
     public function test_go1_api_failure_is_logged_and_gets_a_retry(): void {
         global $DB;
         // An empty body: a timeout, a connection error or an HTTP 5xx error page.
