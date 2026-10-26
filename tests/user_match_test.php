@@ -174,13 +174,25 @@ final class user_match_test extends advanced_testcase {
         $this->assertNull(self::mapped_userid(902));
     }
 
-    public function test_failed_go1_lookup_returns_false_without_warnings(): void {
+    public function test_failed_go1_lookup_throws_exception(): void {
         $this->getDataGenerator()->create_user(['firstname' => 'Jane', 'lastname' => 'Learner']);
         // An empty body: a timeout, a connection error or an HTTP 5xx error page.
         \curl::mock_response('');
 
-        $this->assertFalse(goone_get_moodle_user(888));
+        try {
+            goone_get_moodle_user(888);
+            $this->fail('A failed GO1 user lookup must throw an exception');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('go1apierror', $e->errorcode);
+        }
         $this->assertNull(self::mapped_userid(888));
+    }
+
+    public function test_go1_user_that_go1_does_not_find_is_not_an_error(): void {
+        // GO1 answers with a JSON error body, for example for a deleted GO1 user.
+        \curl::mock_response(json_encode(['message' => 'User not found']));
+
+        $this->assertFalse(goone_get_moodle_user(888));
     }
 
     public function test_go1_user_without_email_and_name_matches_nobody(): void {

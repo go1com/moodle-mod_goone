@@ -171,6 +171,23 @@ final class check_mark_completion_test extends advanced_testcase {
         $this->assertLessThan($gooneb->id, $goonea->id);
     }
 
+    public function test_go1_user_lookup_failure_does_not_stop_the_task(): void {
+        $goone = $this->make_activity('111');
+        $learner = $this->make_learner(555, 'learner@example.com');
+        // GO1 user 999 has no map, and the GO1 user lookup fails (empty body). GO1 user 555 is mapped.
+        // The queue is last in, first out: the empty body is queued first, so that the list is used first.
+        \curl::mock_response('');
+        self::mock_api(['total' => 2, 'hits' => [
+            ['id' => 1, 'lo_id' => 111, 'user_id' => 999, 'status' => 'completed'],
+            ['id' => 2, 'lo_id' => 111, 'user_id' => 555, 'status' => 'completed'],
+        ]]);
+
+        $this->assertFalse($this->run_task());
+
+        $this->assertSame(COMPLETION_COMPLETE, $this->state($goone, (int) $learner->id));
+        $this->assertStringContainsString('Error: lo_id 111 GO1 user 999: ', $this->output);
+    }
+
     public function test_activity_without_course_module_does_not_stop_the_task(): void {
         global $DB;
         $goonea = $this->make_activity('111');

@@ -870,6 +870,7 @@ function goone_signup_url() {
  *
  * @param int $gooneuserid
  * @return mixed stdclass|bool DB record object from {user} table or false
+ * @throws moodle_exception When the GO1 user lookup fails, so that the caller can try again later.
  */
 function goone_get_moodle_user($gooneuserid) {
     global $DB;
@@ -885,8 +886,8 @@ function goone_get_moodle_user($gooneuserid) {
     // API V2
     $userinfofromgo = bulk_mod_goone_api_custom_api_request('users', $gooneuserid);
     if (!is_array($userinfofromgo)) {
-        // No GO1 user: a timeout, a connection error or an error response.
-        return false;
+        // No response from GO1: a timeout, a connection error or an HTTP 5xx error page.
+        throw new moodle_exception('go1apierror', 'mod_goone');
     }
     $email = (string) ($userinfofromgo['email'] ?? '');
     $firstname = (string) ($userinfofromgo['first_name'] ?? '');
@@ -1752,7 +1753,12 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): int
     if (!mod_goone_enrolment_is_completed($enrolinfo)) {
         return 200;
     }
-    $user = goone_get_moodle_user($enrolinfo['user_id']);
+    try {
+        $user = goone_get_moodle_user($enrolinfo['user_id']);
+    } catch (moodle_exception $e) {
+        mod_goone_webhook_log(get_string('webhookgo1usererror', 'mod_goone') . "\n\n" . $request);
+        return 503;
+    }
 
     if ($user) {
         $activities = $DB->get_records('goone', array('loid' => $la_postjson['data']['lo_id']));

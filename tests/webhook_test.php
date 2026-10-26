@@ -273,6 +273,19 @@ final class webhook_test extends advanced_testcase {
         $this->assertStringContainsString('page=1', $html);
     }
 
+    public function test_go1_user_lookup_failure_is_logged_and_gets_a_retry(): void {
+        global $DB;
+        // GO1 user 999 has no map, so the webhook asks GO1 for the user. That request fails.
+        \curl::mock_response('');
+        self::mock_enrolment(['user_id' => 999]);
+
+        $this->assertSame(503, $this->process(self::event()));
+
+        $this->assertNull($this->go1_completed());
+        $this->assertSame([get_string('webhookgo1usererror', 'mod_goone')],
+            array_map(fn($m) => strtok($m, "\n"), array_values($DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1'))));
+    }
+
     public function test_completed_enrolment_without_pass_completes_the_activity(): void {
         self::mock_enrolment(['pass' => false, 'status' => 'completed']);
 
