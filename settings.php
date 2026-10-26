@@ -96,6 +96,10 @@ if ($ADMIN->fulltree) {
             )
         ));
 
+        $settings->add(new admin_setting_configduration('mod_goone/webhooklogretention',
+            get_string('webhooklogretention', 'goone'), get_string('webhooklogretentiondesc', 'goone'),
+            90 * DAYSECS, DAYSECS));
+
         $settings->add(new admin_setting_heading('partnersettings',
             get_string('partnersettingheading', 'goone'), ''));
 

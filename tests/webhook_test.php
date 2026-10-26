@@ -218,6 +218,46 @@ final class webhook_test extends advanced_testcase {
             array_map(fn($m) => strtok($m, "\n"), array_values($DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1'))));
     }
 
+    /**
+     * @covers ::mod_goone_webhook_log_excerpt
+     */
+    public function test_log_excerpt_keeps_short_request(): void {
+        $this->assertSame('{"short":"body"}', mod_goone_webhook_log_excerpt('{"short":"body"}'));
+    }
+
+    /**
+     * @covers ::mod_goone_webhook_log_excerpt
+     */
+    public function test_log_excerpt_keeps_only_the_start_of_long_request(): void {
+        // Multibyte characters, so that a cut by bytes would break a character.
+        $request = str_repeat('é', 2000);
+
+        $excerpt = mod_goone_webhook_log_excerpt($request);
+
+        $this->assertSame(str_repeat('é', 1024) . "\n" . get_string('webhooklogtruncated', 'mod_goone', 2000), $excerpt);
+    }
+
+    /**
+     * @covers ::mod_goone_view_api_payload_logs
+     */
+    public function test_log_page_shows_one_page_of_rows(): void {
+        global $DB;
+        for ($i = 1; $i <= 101; $i++) {
+            $DB->insert_record('goone_webhook_logs', ['message_info' => "Row $i", 'timecreated' => $i]);
+        }
+        $this->setAdminUser();
+
+        ob_start();
+        mod_goone_view_api_payload_logs();
+        $html = ob_get_clean();
+
+        // The newest 100 rows are on the first page, and the oldest row is on the second page.
+        $this->assertStringContainsString('Row 101', $html);
+        $this->assertStringContainsString('Row 2<', $html);
+        $this->assertStringNotContainsString('Row 1<', $html);
+        $this->assertStringContainsString('page=1', $html);
+    }
+
     public function test_completed_enrolment_without_pass_completes_the_activity(): void {
         self::mock_enrolment(['pass' => false, 'status' => 'completed']);
 

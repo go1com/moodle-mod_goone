@@ -1566,6 +1566,25 @@ function mod_goone_webhook_log(string $message): void {
     $DB->insert_record('goone_webhook_logs', (object) ['message_info' => $message, 'timecreated' => time()]);
 }
 
+/**
+ * Return the start of a request body that the webhook rejected, for the log.
+ *
+ * Anyone can send a request to the webhook endpoint. Thus the log keeps only the start of a
+ * rejected body, so that large requests cannot fill the database.
+ *
+ * @param string $request The request body.
+ * @return string The first 1024 characters, and the length of the body when it is longer.
+ */
+function mod_goone_webhook_log_excerpt(string $request): string {
+    $maxlength = 1024;
+    $length = core_text::strlen($request);
+    if ($length <= $maxlength) {
+        return $request;
+    }
+    return core_text::substr($request, 0, $maxlength) . "\n" .
+        get_string('webhooklogtruncated', 'mod_goone', $length);
+}
+
 function mod_goone_view_api_payload_logs() {
     global $PAGE, $OUTPUT, $DB;
     require_login();
@@ -1577,7 +1596,13 @@ function mod_goone_view_api_payload_logs() {
     $PAGE->set_title(get_string('logs_webhook', 'mod_goone'));
     $PAGE->set_heading(get_string('logs_webhook', 'mod_goone'));
     echo $OUTPUT->header();
-        $sqllogs = $DB->get_records_sql('SELECT * FROM {goone_webhook_logs} ORDER BY timecreated DESC');
+        $page = optional_param('page', 0, PARAM_INT);
+        $perpage = 100;
+        $total = $DB->count_records('goone_webhook_logs');
+        $sqllogs = $DB->get_records('goone_webhook_logs', null, 'timecreated DESC, id DESC', '*',
+            $page * $perpage, $perpage);
+        $pagingbar = $OUTPUT->paging_bar($total, $page, $perpage, new moodle_url('/mod/goone/payload.php', ['logs_view' => 1]));
+        echo $pagingbar;
         $table = new html_table();
         $table->head = array('Id', 'message_info', 'Timestamp');
         $table->data = array();
@@ -1590,6 +1615,7 @@ function mod_goone_view_api_payload_logs() {
             );
         }
         echo html_writer::table($table);
+        echo $pagingbar;
     echo $OUTPUT->footer();
 }
 
@@ -1602,7 +1628,7 @@ function mod_goone_api_payload_process_post() {
 
     $api_secret = (string) get_config('mod_goone', 'goone_api_secret');
     if ($api_secret === '') {
-        $logobj->message_info = get_string('signaturenotconfig', 'mod_goone')."\n\n".$request;
+        $logobj->message_info = get_string('signaturenotconfig', 'mod_goone')."\n\n".mod_goone_webhook_log_excerpt($request);
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
         // GO1 sends the event again, so the event is processed after the secret is configured.
@@ -1612,7 +1638,7 @@ function mod_goone_api_payload_process_post() {
 
     $header = $_SERVER['HTTP_GO1_SIGNATURE'] ?? '';
     if ($header === '') {
-        $logobj->message_info = get_string('signaturenotset', 'mod_goone')."\n\n".$request;
+        $logobj->message_info = get_string('signaturenotset', 'mod_goone')."\n\n".mod_goone_webhook_log_excerpt($request);
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
         http_response_code(401);
@@ -1620,7 +1646,7 @@ function mod_goone_api_payload_process_post() {
     }
 
     if (!mod_goone_api_payload_signature_valid($request, $header, $api_secret)) {
-        $logobj->message_info = get_string('signaturenotmatching', 'mod_goone')."\n\n".$request;
+        $logobj->message_info = get_string('signaturenotmatching', 'mod_goone')."\n\n".mod_goone_webhook_log_excerpt($request);
         $logobj->timecreated = time();
         $DB->insert_record('goone_webhook_logs', $logobj);
         http_response_code(401);

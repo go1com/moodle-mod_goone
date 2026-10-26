@@ -31,6 +31,7 @@ $string['modulename'] = 'GO1 content item';
 $string['modulenameplural'] = 'GO1';
 $string['modulename_help'] = 'Use GO1’s library of learning resources to help create your own custom training content, direct from your Moodle instance. </br>With GO1 content you have instant access to a growing library containing thousands of learning resources, from the best content providers around the world. Connecting Moodle and GO1 enables you to search the GO1 library for the right content for your training needs and easily add it to your chosen course for a simple course delivery experience. </br>GO1 has the world’s largest marketplace of training, offering you: </br><ul><li>a huge range of various types of learning resources including documents, interactive files, videos, full-length courses, and more</li><li>a comprehensive off-the-shelf library of professional development training covering areas of leadership, HR, and communications, as well as compliance training to meet your region\'s specific needs.</li></ul>';
 $string['crontask'] = 'Background processing for GO1 module';
+$string['cleanupwebhooklogstask'] = 'Delete old GO1 webhook log rows';
 $string['userpreferences'] = 'User preferences';
 $string['clientsecret'] = 'Client secret';
 $string['clientsecretdesc'] = 'GO1 Oauth client secret';
@@ -164,6 +165,9 @@ This setting gives the value that the course reset form shows first. A teacher c
 <b>Do not reset GO1 progress</b> keeps the record of each learner. Note that a reset still deletes the completion data of Moodle. The two records are then different: the activity shows as not complete, but the GO1 record still shows the learning object as finished. A learner who opens the activity again becomes complete at once, without looking at the content.
 
 <b>Reset GO1 progress</b> removes the GO1 record of each learner in that course. A learner must then finish the learning object again.';
+$string['webhooklogretention'] = 'Keep webhook log rows for';
+$string['webhooklogretentiondesc'] = 'A daily task deletes the rows of the webhook log that are older than this period. Set 0 to keep all rows.';
+$string['webhooklogtruncated'] = '[The request has {$a} characters. Only the start is kept.]';
 $string['resetcompletionkeep'] = 'Do not reset GO1 progress';
 $string['resetcompletionremove'] = 'Reset GO1 progress';
 $string['resetcompletionformlabel'] = 'Reset GO1 progress';
