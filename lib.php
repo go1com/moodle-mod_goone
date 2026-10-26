@@ -916,8 +916,10 @@ function goone_get_moodle_user($gooneuserid) {
     }
 
     // Try firstname and lastname as last resort, but proceed only if one match.
+    // Deleted and suspended users are not candidates, and they are not counted.
     if (empty($user)) {
-        $users = $DB->get_records('user', array('firstname' => $firstname, 'lastname' => $lastname));
+        $users = $DB->get_records('user',
+            array('firstname' => $firstname, 'lastname' => $lastname, 'deleted' => 0, 'suspended' => 0));
         if (sizeof($users) == 1) {
             reset($users);
             $user = current($users);
