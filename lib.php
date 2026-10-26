@@ -1673,6 +1673,13 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
 
     $logobj = new stdClass;
 
+    // The plugin registers its webhook only for enrollment.complete. Other events can arrive when
+    // the subscription is changed in GO1. They are ignored without a log row, so that they cannot
+    // fill the log.
+    if (($la_postjson['event_type'] ?? '') !== 'enrollment.complete') {
+        return;
+    }
+
     $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
     if (!mod_goone_enrolment_is_completed($enrolinfo)) {
         return;

@@ -289,7 +289,8 @@ class lib_test extends advanced_testcase {
         // The GO1 enrolment that the webhook refers to.
         \curl::mock_response(json_encode(['id' => 1, 'pass' => 1, 'user_id' => 777, 'status' => 'completed']));
 
-        mod_goone_api_payload_process_post_request(['data' => ['id' => 1, 'lo_id' => '12345']], '{}');
+        mod_goone_api_payload_process_post_request(['event_type' => 'enrollment.complete',
+            'data' => ['id' => 1, 'lo_id' => '12345']], '{}');
 
         $this->assertTrue($DB->record_exists('course_modules_viewed',
             ['coursemoduleid' => $goone->cmid, 'userid' => $student->id]));

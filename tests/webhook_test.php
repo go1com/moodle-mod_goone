@@ -105,6 +105,52 @@ final class webhook_test extends advanced_testcase {
         return $completed === false ? null : (int) $completed;
     }
 
+    /**
+     * Return the number of queued GO1 responses that no request has used.
+     */
+    private static function unused_mock_responses(): int {
+        $prop = new \ReflectionProperty(\curl::class, 'mockresponses');
+        $prop->setAccessible(true);
+        $count = count($prop->getValue());
+        $prop->setValue(null, []);
+        return $count;
+    }
+
+    /**
+     * Event types that the webhook must ignore, with the data that GO1 sends for them.
+     *
+     * @return array[]
+     */
+    public static function other_event_provider(): array {
+        return [
+            'enrollment.create' => ['enrollment.create', []],
+            'enrollment.delete' => ['enrollment.delete', []],
+            'content.update' => ['content.update', ['id' => '741712', 'lo_id' => null]],
+            'No event type' => ['', []],
+        ];
+    }
+
+    /**
+     * @dataProvider other_event_provider
+     * @param string $type The event type.
+     * @param array $data The event data.
+     */
+    public function test_other_event_type_is_ignored(string $type, array $data): void {
+        global $DB;
+        // A completed enrolment, so that only the event type can stop the processing.
+        self::mock_enrolment();
+        $event = self::event($type, $data);
+        if ($data && $data['lo_id'] === null) {
+            unset($event['data']['lo_id']);
+        }
+
+        $this->process($event);
+
+        $this->assertNull($this->go1_completed());
+        $this->assertSame(1, self::unused_mock_responses(), 'The webhook sent a request to GO1');
+        $this->assertSame(0, $DB->count_records('goone_webhook_logs'));
+    }
+
     public function test_completed_enrolment_without_pass_completes_the_activity(): void {
         self::mock_enrolment(['pass' => false, 'status' => 'completed']);
 
