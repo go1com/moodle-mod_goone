@@ -151,6 +151,49 @@ final class webhook_test extends advanced_testcase {
         $this->assertSame(0, $DB->count_records('goone_webhook_logs'));
     }
 
+    /**
+     * Event data without an enrolment ID or a learning object ID.
+     *
+     * @return array[]
+     */
+    public static function incomplete_data_provider(): array {
+        return [
+            'No enrolment ID' => [['id' => '']],
+            'No learning object ID' => [['lo_id' => '']],
+        ];
+    }
+
+    /**
+     * @dataProvider incomplete_data_provider
+     * @param array $data The event data.
+     */
+    public function test_event_without_ids_is_logged_and_ignored(array $data): void {
+        global $DB;
+        self::mock_enrolment();
+
+        $this->process(self::event('enrollment.complete', $data));
+
+        $this->assertNull($this->go1_completed());
+        $this->assertSame(1, self::unused_mock_responses(), 'The webhook sent a request to GO1');
+        $this->assertSame([get_string('webhookinvaliddata', 'mod_goone')],
+            array_map(fn($m) => strtok($m, "\n"), array_values($DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1'))));
+    }
+
+    public function test_activity_without_course_module_does_not_stop_processing(): void {
+        global $DB;
+        // An activity in a second course, created first, has lost its course module.
+        $course2 = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $orphan = $this->getDataGenerator()->create_module('goone', ['course' => $course2->id, 'loid' => '741712']);
+        $DB->delete_records('course_modules', ['id' => $orphan->cmid]);
+        $DB->set_field('goone', 'id', 1, ['id' => $orphan->id]);
+        $this->getDataGenerator()->enrol_user($this->student->id, $course2->id, 'student');
+        self::mock_enrolment();
+
+        $this->process(self::event());
+
+        $this->assertSame(2, $this->go1_completed());
+    }
+
     public function test_completed_enrolment_without_pass_completes_the_activity(): void {
         self::mock_enrolment(['pass' => false, 'status' => 'completed']);
 

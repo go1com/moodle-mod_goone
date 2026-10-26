@@ -139,6 +139,7 @@ $string['useremailnotunique'] = 'More than one Moodle user has the email of GO1 
 $string['signaturenotmatching'] = "Signature not matching";
 $string['signaturenotset'] = "Signature not found in request";
 $string['signaturenotconfig'] = "Signature not found in Moodle config";
+$string['webhookinvaliddata'] = 'The webhook event has no enrolment ID or no learning object ID. The event was ignored.';
 $string['webhookcreated'] = "Client already have a webhook created!";
 $string['payloadheading'] = "Secret key used on webhook to sign the requests";
 $string['tokennotdefined'] = "Token not defined";

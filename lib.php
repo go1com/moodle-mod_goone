@@ -1680,6 +1680,12 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
         return;
     }
 
+    // Without an enrolment ID, the GO1 request below asks for the list of all enrolments.
+    if (empty($la_postjson['data']['id']) || empty($la_postjson['data']['lo_id'])) {
+        mod_goone_webhook_log(get_string('webhookinvaliddata', 'mod_goone') . "\n\n" . $request);
+        return;
+    }
+
     $enrolinfo = bulk_mod_goone_api_custom_api_request('enrollments', $la_postjson['data']['id']);
     if (!mod_goone_enrolment_is_completed($enrolinfo)) {
         return;
@@ -1692,6 +1698,9 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): voi
         if (!empty($activities)) {
             foreach ($activities as $id => $activity) {
                 $cm = $DB->get_record('course_modules', array('course' => $activity->course, 'module' => $mod->id, 'instance' => $activity->id));
+                if (!$cm) {
+                    continue;
+                }
 
                 // Ensure the user is enrolled in course.
                 $context = \context_course::instance($activity->course);
