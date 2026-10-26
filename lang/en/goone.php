@@ -157,9 +157,9 @@ $string['resetcompletiondesc'] = 'What to do with the GO1 progress of the learne
 
 This setting gives the value that the course reset form shows first. A teacher can change it for each reset.
 
-<b>Do not reset GO1 completions</b> keeps the record of each learner. Note that a reset still deletes the completion data of Moodle. The two records are then different: the activity shows as not complete, but the GO1 record still shows the learning object as finished. A learner who opens the activity again becomes complete at once, without looking at the content.
+<b>Do not reset GO1 progress</b> keeps the record of each learner. Note that a reset still deletes the completion data of Moodle. The two records are then different: the activity shows as not complete, but the GO1 record still shows the learning object as finished. A learner who opens the activity again becomes complete at once, without looking at the content.
 
-<b>Reset GO1 completions</b> removes the GO1 record of each learner in that course. A learner must then finish the learning object again.';
-$string['resetcompletionkeep'] = 'Do not reset GO1 completions';
-$string['resetcompletionremove'] = 'Reset GO1 completions';
-$string['resetcompletionformlabel'] = 'Reset GO1 completions';
+<b>Reset GO1 progress</b> removes the GO1 record of each learner in that course. A learner must then finish the learning object again.';
+$string['resetcompletionkeep'] = 'Do not reset GO1 progress';
+$string['resetcompletionremove'] = 'Reset GO1 progress';
+$string['resetcompletionformlabel'] = 'Reset GO1 progress';
