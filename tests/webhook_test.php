@@ -54,6 +54,8 @@ final class webhook_test extends advanced_testcase {
         global $DB;
         parent::setUp();
         $this->resetAfterTest();
+        // The queue of GO1 responses is static. Start with an empty queue.
+        self::unused_mock_responses();
         // A valid token prevents a token request.
         set_config('token_time', time(), 'mod_goone');
         $this->course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);

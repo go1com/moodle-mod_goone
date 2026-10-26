@@ -1524,7 +1524,17 @@ function bulk_mod_goone_create_api_secret_key($n = 12) {
 }
 
 
-function mod_goone_check_webhook() {
+/**
+ * Find the GO1 webhook of this site.
+ *
+ * Other webhooks of the GO1 portal, for example the webhook of another site, are ignored.
+ *
+ * @return array|null The GO1 webhook whose URL is the payload.php of this site, or null.
+ * @throws moodle_exception When GO1 does not return the list of webhooks.
+ */
+function mod_goone_check_webhook(): ?array {
+    global $CFG;
+
     goone_tokentest();
 
     $curl = new curl();
@@ -1533,14 +1543,17 @@ function mod_goone_check_webhook() {
         'api-version: 2022-07-01',
         'Authorization: Bearer '.get_config('mod_goone', 'token'),
     ));
-    $resp = $curl->get("https://gateway.go1.com/webhooks");
-    $webhook = json_decode($resp);
-
-    if(isset($webhook->total) && $webhook->total > 0 ) {
-        return array('webhook'=>true, 'data'=>$webhook);
-    }else{
-        return array('webhook'=>false, 'data'=>'');
+    $response = json_decode($curl->get("https://gateway.go1.com/webhooks"), true);
+    if (!isset($response['hits']) || !is_array($response['hits'])) {
+        throw new moodle_exception('webhookcurlerror', 'mod_goone');
     }
+
+    foreach ($response['hits'] as $webhook) {
+        if (($webhook['url'] ?? '') === $CFG->wwwroot . '/mod/goone/payload.php') {
+            return $webhook;
+        }
+    }
+    return null;
 }
 
 /**
@@ -1794,8 +1807,66 @@ function mod_goone_api_payload_process_post_request($la_postjson, $request): int
 }
 
 
+/**
+ * Create the GO1 webhook of this site, if it does not exist.
+ *
+ * The new signing secret is stored only after GO1 has accepted the webhook. Thus a failed request
+ * does not change the secret of a webhook that works.
+ *
+ * @return string The name of the language string that describes the result.
+ */
+function mod_goone_create_webhook(): string {
+    global $CFG;
+
+    try {
+        if (mod_goone_check_webhook()) {
+            return 'webhookcreated';
+        }
+    } catch (moodle_exception $e) {
+        mod_goone_webhook_log(get_string('webhookcurlerror', 'mod_goone'));
+        return 'webhookcurlerror';
+    }
+
+    goone_tokentest();
+    $token = get_config('mod_goone', 'token');
+    if (empty($token)) {
+        mod_goone_webhook_log(get_string('tokennotdefined', 'mod_goone'));
+        return 'tokennotdefined';
+    }
+
+    $secret = bulk_mod_goone_create_api_secret_key();
+    $curl = new curl();
+    $curl->setHeader(array(
+        'Content-Type: application/json',
+        'Authorization: Bearer '.$token,
+        'Api-Version: 2022-07-01',
+    ));
+    $payload = json_encode(array(
+        'name' => 'Open LMS webhook for course completion',
+        'url' => $CFG->wwwroot . '/mod/goone/payload.php',
+        'secret_key' => $secret,
+        'event_types' => array('enrollment.complete'),
+    ));
+    $response = (string) $curl->post('https://gateway.go1.com/webhooks', $payload);
+
+    // GO1 returns the secret in the response. The log must not show it.
+    $result = json_decode($response, true);
+    $logged = is_array($result) ? json_encode(array_diff_key($result, ['secret_key' => true]))
+        : mod_goone_webhook_log_excerpt($response);
+    $httpcode = $curl->get_info()['http_code'] ?? 0;
+    if ($curl->get_errno() || $httpcode < 200 || $httpcode >= 300 || empty($result['id'])) {
+        $error = $curl->get_errno() ? 'Error: ' . $curl->error : $logged;
+        mod_goone_webhook_log(get_string('webhookcurlerror', 'mod_goone') . "\n\n" . $error);
+        return 'webhookcurlerror';
+    }
+
+    set_config('goone_api_secret', $secret, 'mod_goone');
+    mod_goone_webhook_log(get_string('webhooknewcreatedgood', 'mod_goone') . "\n\n" . $logged);
+    return 'webhooknewcreatedgood';
+}
+
 function mod_goone_create_webhook_api_request() {
-    global $PAGE, $OUTPUT, $DB, $CFG;
+    global $PAGE, $OUTPUT;
 
     // Creating a webhook changes site state (it regenerates the signing secret and
     // registers a GO1 webhook), so require login, capability and a valid sesskey.
@@ -1804,58 +1875,14 @@ function mod_goone_create_webhook_api_request() {
     require_capability('mod/goone:viewbulkcontent', $context);
     require_sesskey();
     $PAGE->set_context($context);
+    $PAGE->set_pagelayout('admin');
+    $PAGE->set_url('/mod/goone/payload.php', ['create_webhook' => 1]);
+    $PAGE->set_title(get_string('logs_webhook', 'mod_goone'));
+    $PAGE->set_heading(get_string('logs_webhook', 'mod_goone'));
 
-    $logobj = new stdClass;
-    // Check if webhook already created and prevent creation of multiple elements.
-    $webhook = mod_goone_check_webhook();
-    if($webhook['webhook'] == false) {
-            goone_tokentest();
-            $token = get_config('mod_goone', 'token');
-            if (!empty($token)) {
-                set_config('goone_api_secret', bulk_mod_goone_create_api_secret_key(), 'mod_goone');
-                $curl = new curl();
-                $curl->setHeader(array(
-                    'Content-Type: application/json',
-                    'Authorization: Bearer '.$token,
-                    'Api-Version: 2022-07-01',
-                ));
-                $payload = json_encode(array(
-                    'name' => 'Open LMS webhook for course completion',
-                    'url' => $CFG->wwwroot . '/mod/goone/payload.php',
-                    'secret_key' => get_config('mod_goone', 'goone_api_secret'),
-                    'event_types' => array('enrollment.complete'),
-                ));
-                $result = $curl->post('https://gateway.go1.com/webhooks', $payload);
+    $result = mod_goone_create_webhook();
 
-                $logobj->message_info = $result;
-                $logobj->timecreated = time();
-                $DB->insert_record('goone_webhook_logs', $logobj);
-
-                if ($curl->get_errno()) {
-                    $logobj->message_info = 'Error:' . $curl->error;
-                    $logobj->timecreated = time();
-                    $DB->insert_record('goone_webhook_logs', $logobj);
-                    echo $OUTPUT->header();
-                        echo html_writer::tag('div', get_string('webhookcurlerror', 'mod_goone'), array('class'=>'alert alert-primary', 'role'=> 'alert'));
-                    echo $OUTPUT->footer();
-                    die;
-                }
-                echo $OUTPUT->header();
-                    echo html_writer::tag('div', get_string('webhooknewcreatedgood', 'mod_goone'), array('class'=>'alert alert-primary', 'role'=> 'alert'));
-                echo $OUTPUT->footer();
-                die;
-            } else {
-                $logobj->message_info = get_string('tokennotdefined', 'mod_goone');
-                $logobj->timecreated = time();
-                $DB->insert_record('goone_webhook_logs', $logobj);
-            }
-    } else {
-        $PAGE->set_pagelayout('admin');
-        $PAGE->set_url('/mod/goone/payload.php?create_webhook=1');
-        $PAGE->set_title(get_string('logs_webhook', 'mod_goone'));
-        $PAGE->set_heading(get_string('logs_webhook', 'mod_goone'));
-        echo $OUTPUT->header();
-            echo html_writer::tag('div', get_string('webhookcreated', 'mod_goone'), array('class'=>'alert alert-primary', 'role'=> 'alert'));
-        echo $OUTPUT->footer();
-    }
+    echo $OUTPUT->header();
+    echo html_writer::tag('div', get_string($result, 'mod_goone'), array('class' => 'alert alert-primary', 'role' => 'alert'));
+    echo $OUTPUT->footer();
 }
