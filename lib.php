@@ -893,18 +893,28 @@ function goone_get_moodle_user($gooneuserid) {
         $user = $DB->get_record('user', array('username' => $username));
     }
 
-    // Try email as-is.
-    if (empty($user)) {
-        $user = $DB->get_record('user', array('email' => $email));
+    // Try email as-is. Do not guess when more than one user has the email.
+    if (empty($user) && !empty($email)) {
+        $users = $DB->get_records('user', array('email' => $email));
+        if (count($users) > 1) {
+            mod_goone_webhook_log(get_string('useremailnotunique', 'mod_goone', $gooneuserid));
+            return false;
+        }
+        $user = reset($users);
     }
 
     if (empty($user)) {
         $user = $DB->get_record('user', array('username' => $email));
     }
 
-    // Try email from external_user_id.
+    // Try email from external_user_id. Do not guess when more than one user has the email.
     if (empty($user) && !empty($username)) {
-        $user = $DB->get_record('user', array('email' => $username));
+        $users = $DB->get_records('user', array('email' => $username));
+        if (count($users) > 1) {
+            mod_goone_webhook_log(get_string('useremailnotunique', 'mod_goone', $gooneuserid));
+            return false;
+        }
+        $user = reset($users);
     }
 
     // Try the user part of the email as username.
@@ -1511,6 +1521,16 @@ function mod_goone_check_webhook() {
     }else{
         return array('webhook'=>false, 'data'=>'');
     }
+}
+
+/**
+ * Write a row to the GO1 webhook log.
+ *
+ * @param string $message The message.
+ */
+function mod_goone_webhook_log(string $message): void {
+    global $DB;
+    $DB->insert_record('goone_webhook_logs', (object) ['message_info' => $message, 'timecreated' => time()]);
 }
 
 function mod_goone_view_api_payload_logs() {

@@ -134,6 +134,7 @@ $string['goone_api_secret'] = "Webhook Secret";
 $string['goone_api_secretdesc'] = "Secret created to handle the webhook api calls.";
 $string['logs_webhook'] = "Webhook logs";
 $string['usernotfound'] = "User not found";
+$string['useremailnotunique'] = 'More than one Moodle user has the email of GO1 user {$a}. No user was selected.';
 $string['signaturenotmatching'] = "Signature not matching";
 $string['signaturenotset'] = "Signature not found in request";
 $string['signaturenotconfig'] = "Signature not found in Moodle config";

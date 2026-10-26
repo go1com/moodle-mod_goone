@@ -104,6 +104,48 @@ final class user_match_test extends advanced_testcase {
         $this->assertNull(self::mapped_userid(999));
     }
 
+    public function test_email_match_maps_the_only_user_with_the_email(): void {
+        $user = $this->getDataGenerator()->create_user(['email' => 'jane@example.com']);
+        self::mock_go1_user(888, 'jane@example.com', 'Other', 'Name');
+
+        $this->assertEquals($user->id, goone_get_moodle_user(888)->id);
+        $this->assertSame((int) $user->id, self::mapped_userid(888));
+    }
+
+    public function test_email_shared_by_two_users_maps_nobody(): void {
+        global $DB;
+        set_config('allowaccountssameemail', 1);
+        $this->getDataGenerator()->create_user(['email' => 'shared@example.com', 'firstname' => 'Jane', 'lastname' => 'Learner']);
+        $this->getDataGenerator()->create_user(['email' => 'shared@example.com']);
+        self::mock_go1_user(888, 'shared@example.com', 'Jane', 'Learner');
+
+        $this->assertFalse(goone_get_moodle_user(888));
+        $this->assertNull(self::mapped_userid(888));
+        $this->assertSame([get_string('useremailnotunique', 'mod_goone', 888)],
+            array_values($DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1')));
+    }
+
+    public function test_external_user_id_email_shared_by_two_users_maps_nobody(): void {
+        set_config('allowaccountssameemail', 1);
+        $this->getDataGenerator()->create_user(['email' => 'jane@example.com']);
+        $this->getDataGenerator()->create_user(['email' => 'jane@example.com']);
+        \curl::mock_response(json_encode(['id' => 888, 'email' => 'other@example.com', 'first_name' => 'Jane',
+            'last_name' => 'Learner', 'custom_fields' => ['external_user_id' => 'jane@example.com']]));
+
+        $this->assertFalse(goone_get_moodle_user(888));
+        $this->assertNull(self::mapped_userid(888));
+    }
+
+    public function test_empty_go1_email_does_not_match_user_without_email(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $DB->set_field('user', 'email', '', ['id' => $user->id]);
+        self::mock_go1_user(888, '', 'Other', 'Name');
+
+        $this->assertFalse(goone_get_moodle_user(888));
+        $this->assertNull(self::mapped_userid(888));
+    }
+
     public function test_name_match_with_two_active_namesakes_maps_nobody(): void {
         $this->getDataGenerator()->create_user(['firstname' => 'Jane', 'lastname' => 'Learner']);
         $this->getDataGenerator()->create_user(['firstname' => 'Jane', 'lastname' => 'Learner']);
