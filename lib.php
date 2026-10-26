@@ -884,9 +884,13 @@ function goone_get_moodle_user($gooneuserid) {
 
     // API V2
     $userinfofromgo = bulk_mod_goone_api_custom_api_request('users', $gooneuserid);
-    $email = $userinfofromgo['email'];
-    $firstname = $userinfofromgo['first_name'];
-    $lastname = $userinfofromgo['last_name'];
+    if (!is_array($userinfofromgo)) {
+        // No GO1 user: a timeout, a connection error or an error response.
+        return false;
+    }
+    $email = (string) ($userinfofromgo['email'] ?? '');
+    $firstname = (string) ($userinfofromgo['first_name'] ?? '');
+    $lastname = (string) ($userinfofromgo['last_name'] ?? '');
     $username = (isset($userinfofromgo['custom_fields']['external_user_id'])) ? $userinfofromgo['custom_fields']['external_user_id'] : '';
 
     if (!empty($username)) {
@@ -927,7 +931,8 @@ function goone_get_moodle_user($gooneuserid) {
 
     // Try firstname and lastname as last resort, but proceed only if one match.
     // Deleted and suspended users are not candidates, and they are not counted.
-    if (empty($user)) {
+    // A GO1 user without a name is not matched on the name.
+    if (empty($user) && $firstname !== '' && $lastname !== '') {
         $users = $DB->get_records('user',
             array('firstname' => $firstname, 'lastname' => $lastname, 'deleted' => 0, 'suspended' => 0));
         if (sizeof($users) == 1) {

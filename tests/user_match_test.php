@@ -174,6 +174,25 @@ final class user_match_test extends advanced_testcase {
         $this->assertNull(self::mapped_userid(902));
     }
 
+    public function test_failed_go1_lookup_returns_false_without_warnings(): void {
+        $this->getDataGenerator()->create_user(['firstname' => 'Jane', 'lastname' => 'Learner']);
+        // An empty body: a timeout, a connection error or an HTTP 5xx error page.
+        \curl::mock_response('');
+
+        $this->assertFalse(goone_get_moodle_user(888));
+        $this->assertNull(self::mapped_userid(888));
+    }
+
+    public function test_go1_user_without_email_and_name_matches_nobody(): void {
+        global $DB;
+        $user = $this->getDataGenerator()->create_user();
+        $DB->update_record('user', ['id' => $user->id, 'firstname' => '', 'lastname' => '']);
+        \curl::mock_response(json_encode(['id' => 888]));
+
+        $this->assertFalse(goone_get_moodle_user(888));
+        $this->assertNull(self::mapped_userid(888));
+    }
+
     public function test_name_match_with_two_active_namesakes_maps_nobody(): void {
         $this->getDataGenerator()->create_user(['firstname' => 'Jane', 'lastname' => 'Learner']);
         $this->getDataGenerator()->create_user(['firstname' => 'Jane', 'lastname' => 'Learner']);
