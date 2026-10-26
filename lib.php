@@ -1662,7 +1662,9 @@ function mod_goone_api_payload_process_post() {
  * Check the signature of a GO1 webhook request.
  *
  * The GO1-Signature header holds "key=value" items. The value of the first item is the timestamp,
- * and the value of the second item is the HMAC-SHA256 of "<timestamp>.<request>".
+ * and the value of the second item is the HMAC-SHA256 of "<timestamp>.<request>". The timestamp is
+ * a Unix timestamp in milliseconds. A request with a timestamp more than 24 hours from the current
+ * time is rejected, so that a captured request cannot be sent again later.
  *
  * @param string $request The request body.
  * @param string $header The GO1-Signature header.
@@ -1683,6 +1685,10 @@ function mod_goone_api_payload_signature_valid(string $request, string $header, 
         $values[] = $parts[1];
     }
     if (count($values) < 2) {
+        return false;
+    }
+
+    if (!ctype_digit($values[0]) || abs(time() - intdiv((int) $values[0], 1000)) > DAYSECS) {
         return false;
     }
 

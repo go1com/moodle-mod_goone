@@ -146,16 +146,24 @@ class lib_test extends advanced_testcase {
      */
     public static function payload_signature_provider(): array {
         $request = '{"data":{"id":1}}';
-        $signed = function(string $secret) use ($request): string {
-            return 't=1700000000,v1=' . hash_hmac('sha256', '1700000000.' . $request, $secret);
+        // GO1 sends t as a Unix timestamp in milliseconds.
+        $now = time() * 1000;
+        $signed = function(string $secret, int $t) use ($request): string {
+            return "t=$t,v1=" . hash_hmac('sha256', $t . '.' . $request, $secret);
         };
         return [
-            'Correct signature' => [$request, $signed('secret'), 'secret', true],
-            'Incorrect signature' => [$request, $signed('other'), 'secret', false],
-            'Empty secret, header signed with the empty key' => [$request, $signed(''), '', false],
+            'Correct signature' => [$request, $signed('secret', $now), 'secret', true],
+            'Incorrect signature' => [$request, $signed('other', $now), 'secret', false],
+            'Empty secret, header signed with the empty key' => [$request, $signed('', $now), '', false],
             'Empty header' => [$request, '', 'secret', false],
-            'Header with one item' => [$request, 't=1700000000', 'secret', false],
+            'Header with one item' => [$request, "t=$now", 'secret', false],
             'Header items without a value' => [$request, 'abc,def', 'secret', false],
+            'Timestamp 23 hours old' => [$request, $signed('secret', $now - 23 * HOURSECS * 1000), 'secret', true],
+            'Timestamp 25 hours old' => [$request, $signed('secret', $now - 25 * HOURSECS * 1000), 'secret', false],
+            'Timestamp 25 hours in the future' => [$request, $signed('secret', $now + 25 * HOURSECS * 1000), 'secret', false],
+            'Timestamp in seconds' => [$request, $signed('secret', time()), 'secret', false],
+            'Timestamp that is not a number' => [$request, "t=abc,v1=" . hash_hmac('sha256', 'abc.' . $request, 'secret'),
+                'secret', false],
         ];
     }
 
