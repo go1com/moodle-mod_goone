@@ -52,23 +52,28 @@ class check_mark_completion extends \core\task\scheduled_task {
 
         //API completion checks
         $comps = $apireqs = 0;
-        try {
-            //Get enrolments for all the user in all goone lo_ids.
-            $gooneactivities  = $DB->get_records('goone');
-            if (empty($gooneactivities)) {
-                return true;
+        //Get enrolments for all the user in all goone lo_ids.
+        $gooneactivities  = $DB->get_records('goone');
+        if (empty($gooneactivities)) {
+            return true;
+        }
+        $module = $DB->get_record('modules', ['name'=>'goone']);
+        foreach ($gooneactivities as $goone) {
+            //Get course module.
+            $cm = $DB->get_record('course_modules', ['course' => $goone->course, 'module' => $module->id, 'instance' => $goone->id]);
+            if (!$cm) {
+                mtrace("Skip: goone->id $goone->id has no course module");
+                continue;
             }
-            $module = $DB->get_record('modules', ['name'=>'goone']);
-            foreach ($gooneactivities as $goone) {
-                //Get enrolments completed from goone.
-                if ($debugging) mtrace("Requesting: course $goone->course goone->id $goone->id lo_id $goone->loid");
-                $goonecompletedenrollments = bulk_mod_goone_api_custom_api_request("enrollments" , "", ['lo_ids' => $goone->loid, 'status' => 'completed', '']);
-                $apireqs++;
-                //Get course module.
-                $cm = $DB->get_record('course_modules', ['course' => $goone->course, 'module' => $module->id, 'instance' => $goone->id]);
-                $course = $DB->get_record('course', ['id' => $goone->course]);
-                $completion = new \completion_info($course);
-                foreach ($goonecompletedenrollments['hits'] as $index => $hit) {
+            //Get enrolments completed from goone.
+            if ($debugging) mtrace("Requesting: course $goone->course goone->id $goone->id lo_id $goone->loid");
+            $goonecompletedenrollments = bulk_mod_goone_api_custom_api_request("enrollments" , "", ['lo_ids' => $goone->loid, 'status' => 'completed', '']);
+            $apireqs++;
+            $course = $DB->get_record('course', ['id' => $goone->course]);
+            $completion = new \completion_info($course);
+            foreach ($goonecompletedenrollments['hits'] as $index => $hit) {
+                // An error for one enrolment must not stop the task for the other enrolments.
+                try {
                     //Get user details from goone.
                     if (($user = goone_get_moodle_user($hit['user_id'])) == false) {
                         continue;
@@ -109,11 +114,12 @@ class check_mark_completion extends \core\task\scheduled_task {
                         if ($debugging) mtrace(" - skip: cm->completion $cm->completion completionsubmit $goone->completionsubmit");
                     }
                     $comps++;
+                } catch (\moodle_exception $e) {
+                    mtrace("Error: lo_id $goone->loid GO1 user {$hit['user_id']}: " . $e->getMessage());
+                    $status = false;
                 }
-                if ($debugging) mtrace("");
             }
-        } catch (\moodle_exception $e) {
-            $status = false;
+            if ($debugging) mtrace("");
         }
 
         $endtime = microtime();
