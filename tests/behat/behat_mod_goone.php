@@ -177,6 +177,12 @@ class behat_mod_goone extends behat_base {
      * in its own style, thus every version reads the same way. This step holds
      * that result.
      *
+     * The step also reads the span.form-check of an option, which Moodle puts in
+     * the middle with "justify-content: center" for a form-inline. Note that a
+     * test site reaches no GO1 catalogue, thus the facets are empty, thus the form
+     * tag does not survive (see SMELL-10) and the Moodle rule does not apply here.
+     * A run on a real site is still necessary to prove that part.
+     *
      * @Then /^the GO1 filter "([^"]*)" is lined up at the left$/
      * @param string $select The id of the select.
      */
@@ -187,9 +193,11 @@ class behat_mod_goone extends behat_base {
             . ' var b = w.querySelector("button.multiselect");'
             . ' var m = w.querySelector(".multiselect-container");'
             . ' var o = w.querySelector(".multiselect-option");'
+            . ' var f = o ? o.querySelector(".form-check") : null;'
             . ' return ["button=" + (b ? getComputedStyle(b).textAlign : "none"),'
             . ' "menu=" + (m ? getComputedStyle(m).textAlign : "none"),'
-            . ' "option=" + (o ? getComputedStyle(o).textAlign : "none")].join(" "); })()');
+            . ' "option=" + (o ? getComputedStyle(o).textAlign : "none"),'
+            . ' "formcheck=" + (f ? getComputedStyle(f).justifyContent : "none")].join(" "); })()');
 
         if (strpos((string)$found, 'center') !== false || strpos((string)$found, 'right') !== false) {
             throw new ExpectationException(

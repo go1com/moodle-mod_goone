@@ -108,6 +108,15 @@
     .multiselect-native-select .multiselect-all {
         text-align: left;
     }
+
+    /* Each option holds a span.form-check with the checkbox and the words. Moodle
+       has the rule ".form-inline .form-check { justify-content: center }", and the
+       filter bar is a form-inline, thus every option sat in the middle of its row.
+       That is flexbox, not text, so a text-align rule cannot correct it.
+       Three class names beat the two of the Moodle rule. */
+    .multiselect-native-select .multiselect-container .form-check {
+        justify-content: flex-start;
+    }
 </style>
 
 
