@@ -55,8 +55,8 @@ class mod_goone_external extends external_api {
         $context = context::instance_by_id($contextid);
         self::validate_context($context);
         require_capability('mod/goone:addinstance', $context);
-        // Avoid error when space in search term.
-        $keyword = urlencode($keyword); 
+        // goone_get_hits() makes every value safe for the address of the request.
+        // Do not make the keyword safe again here: it would then be made safe twice.
         $result = goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset);
         return [
             'result' => $result,

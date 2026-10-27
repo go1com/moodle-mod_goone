@@ -623,12 +623,15 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
         return false;
     }
 
+    // Each value goes into the address of the request, thus each value is made safe
+    // here. A keyword such as "1 minute" holds a space, and curl refuses an address
+    // that holds a space with "Malformed input to a URL function".
     $data = array (
-        'keyword' => $keyword,
-        'type' => implode(',', $type),
+        'keyword' => rawurlencode($keyword),
+        'type' => implode(',', array_map('rawurlencode', $type)),
         'offset' => $offset,
-        'sort' => $sort,
-        'providers' => implode(',', $provider)
+        'sort' => rawurlencode($sort),
+        'providers' => implode(',', array_map('rawurlencode', $provider))
     );
 
     $config = get_config('mod_goone');
@@ -666,7 +669,7 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
             unset($lang);
         }
         if (isset($lang) && $lang != '') {
-            $params .= "&language%5B%5D=".$lang;
+            $params .= "&language%5B%5D=".rawurlencode($lang);
         }
     }
 
@@ -676,7 +679,7 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
             unset($ta);
         }
         if (isset($ta) && $ta != '') {
-            $params .= "&tags%5B%5D=".$ta;
+            $params .= "&tags%5B%5D=".rawurlencode($ta);
         }
     }
     $curl = new curl();
@@ -686,6 +689,11 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
     $curl->setHeader($header);
     $response = @json_decode($curl->get($serverurl), true);
     if ($curl->get_info()['http_code'] != 200) {
+        throw new moodle_exception('go1apierror', 'mod_goone');
+    }
+    // GO1 can answer 200 with a body that holds no hits. Say so, in place of
+    // reading a list that is not there.
+    if (!isset($response['hits']) || !is_array($response['hits'])) {
         throw new moodle_exception('go1apierror', 'mod_goone');
     }
     foreach ($response['hits'] as &$obj) {
@@ -1024,12 +1032,14 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
     if (!goone_tokentest()) {
         return false;
     }
+    // Each value goes into the address of the request, thus each value is made safe
+    // here, the same way as in goone_get_hits().
     $data = array (
-        'keyword' => $keyword,
-        'type' => implode(',', $type),
+        'keyword' => rawurlencode($keyword),
+        'type' => implode(',', array_map('rawurlencode', $type)),
         'offset' => $offset,
-        'sort' => $sort,
-        'providers' => implode(',', $provider)
+        'sort' => rawurlencode($sort),
+        'providers' => implode(',', array_map('rawurlencode', $provider))
     );
     $config = get_config('mod_goone');
     $data['limit'] = 20;
@@ -1063,7 +1073,7 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
             unset($lang);
         }
         if (isset($lang) && $lang != '') {
-            $params .= "&language%5B%5D=".$lang;
+            $params .= "&language%5B%5D=".rawurlencode($lang);
         }
     }
     foreach ($topic as $ta) {
@@ -1072,7 +1082,7 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
             unset($ta);
         }
         if (isset($ta) && $ta != '') {
-            $params .= "&topics%5B%5D=".$ta;
+            $params .= "&topics%5B%5D=".rawurlencode($ta);
         }
     }
     $durationquery = "";
@@ -1095,6 +1105,12 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
         $params.="&".$durationquery;
     }
     $response = bulk_mod_goone_api_custom_api_request("learning-objects?facets=instance,tag,language,topics&marketplace=all&".$params);
+    // bulk_mod_goone_api_custom_api_request() gives back null when GO1 does not
+    // answer. Say so, as goone_get_hits() does. Without this the list is empty and
+    // the number of results is empty, and the user is not told that anything failed.
+    if (!isset($response['hits']) || !is_array($response['hits'])) {
+        throw new moodle_exception('go1apierror', 'mod_goone');
+    }
     foreach ($response['hits'] as &$obj) {
         $obj['description'] = goone_clean_hits($obj['description']);
         $obj['title'] = str_replace('"', '', $obj['title']);

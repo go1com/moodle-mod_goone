@@ -125,7 +125,7 @@ var GOONE_BUTTON = '<button type="button"'
                 $('.multiselect-reset').on('click', function() {
                         browser.changeFilter();
                 });
-                var fixedTags = browser.selected("#tag").map(str => str.replace(/ /g, '%20'));
+                var fixedTags = browser.selected("#tag");
                 browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
                     browser.selected("#provider"),
                     $("#keyword").val(), $("#sort").val(), browser.offSet);
@@ -165,7 +165,7 @@ var GOONE_BUTTON = '<button type="button"'
             });
             $("#load-more").click(function() {
                 browser.offSet = browser.offSet + 20;
-                var fixedTags = browser.selected("#tag").map(str => str.replace(/ /g, '%20'));
+                var fixedTags = browser.selected("#tag");
                 browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
                     browser.selected("#provider"),
                     $("#keyword").val(), $("#sort").val(), browser.offSet);
@@ -185,7 +185,7 @@ var GOONE_BUTTON = '<button type="button"'
             }
             browser.offSet = 0;
             $("#goone-browser-results").html("");
-            var fixedTags = browser.selected("#tag").map(str => str.replace(/ /g, '%20'));
+            var fixedTags = browser.selected("#tag");
             browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
                     browser.selected("#provider"),
                 $("#keyword").val(), $("#sort").val(), browser.offSet);
@@ -211,7 +211,7 @@ var GOONE_BUTTON = '<button type="button"'
                         $("#load-more-div").show();
                         $("#end-of-results").hide();
                     }
-                    var fixedTags = browser.selected("#tag").map(str => str.replace(/ /g, '%20'));
+                    var fixedTags = browser.selected("#tag");
                     if (type + '' != browser.selected("#type") + '' || tag + '' != fixedTags + ''
                         || language + '' != browser.selected("#language") + ''
                         || provider + '' != browser.selected("#provider") + '') {
