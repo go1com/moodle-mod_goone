@@ -26,7 +26,7 @@ defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'mod_goone';
 $plugin->version  = 2026102700;
-$plugin->release  = 'v5.3b6';
+$plugin->release  = '5.3-beta.7';
 $plugin->requires = 2023100900;
 $plugin->supported = [405, 503];
 $plugin->maturity = MATURITY_BETA;
