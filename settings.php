@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die;
 use mod_goone\settings\setting_statictext;
 use mod_goone\settings\admin_setting_clientid_with_token_validator;
 
-global $ADMIN, $USER, $CFG;
+global $ADMIN, $USER, $CFG, $PAGE;
 if ($ADMIN->fulltree) {
 
     require_once("$CFG->libdir/resourcelib.php");
@@ -41,9 +41,17 @@ if ($ADMIN->fulltree) {
     if (empty($CFG->mod_goone_admin_users) || in_array($USER->username, $CFG->mod_goone_admin_users)) {
 
 
-        $createwebhook = '<a class="btn btn-primary" target="_blank" href="'
-        .$CFG->wwwroot. '/mod/goone/payload.php?create_webhook=1&sesskey=' . sesskey() . '" role="button">' . get_string('createwebhook', 'mod_goone') . '</a>'; 
-       
+        // The button asks the user to agree, then sends the request and shows the result on
+        // this page. It must have type="button": the settings page is a form, and a button
+        // without a type sends that form.
+        $PAGE->requires->js_call_amd('mod_goone/webhook_admin', 'init');
+        $createwebhook = html_writer::tag('button', get_string('createwebhook', 'mod_goone'), [
+            'type' => 'button',
+            'class' => 'btn btn-primary',
+            'data-action' => 'goone-create-webhook',
+        ]);
+
+
         $webhooklogs = '<br/><br/> <a class="btn btn-primary" target="_blank" href="'
         .$CFG->wwwroot. '/mod/goone/payload.php?logs_view=1" role="button">' . get_string('viewwebhooklogs', 'mod_goone') . '</a>';
        

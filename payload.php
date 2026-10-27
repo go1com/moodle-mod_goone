@@ -38,11 +38,16 @@ $createwebhook = optional_param('create_webhook', 0, PARAM_INT);
 
 if ($iswebhook) {
     mod_goone_api_payload_process_post();
+} else if ($ispost && $createwebhook == 1) {
+    // The button on the settings page sends this request. It gives back JSON, not a page.
+    mod_goone_create_webhook_ajax();
 } else if (!$ispost) {
     if ($viewlogs == 1 && $createwebhook == 0) {
         mod_goone_view_api_payload_logs();
     } else if ($viewlogs == 0 && $createwebhook == 1) {
-        mod_goone_create_webhook_api_request();
+        // The webhook is made by the button on the settings page, which sends a POST.
+        // An address that is kept from an earlier release comes to here.
+        redirect(new moodle_url('/admin/settings.php', ['section' => 'modsettinggoone']));
     } else if ($viewlogs == 0 && $createwebhook == 0) {
         redirect($CFG->wwwroot);
     }

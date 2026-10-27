@@ -1919,24 +1919,34 @@ function mod_goone_create_webhook(): string {
     return $created ? 'webhooknewcreatedgood' : 'webhookcurlerror';
 }
 
-function mod_goone_create_webhook_api_request() {
-    global $PAGE, $OUTPUT;
+/**
+ * Tell if a result of mod_goone_create_webhook() is a success.
+ *
+ * @param string $code The result code.
+ * @return bool True if the webhook was made or repaired.
+ */
+function mod_goone_webhook_result_is_success(string $code): bool {
+    return in_array($code, ['webhooknewcreatedgood', 'webhookrepaired'], true);
+}
 
-    // Creating a webhook changes site state (it regenerates the signing secret and
-    // registers a GO1 webhook), so require login, capability and a valid sesskey.
+/**
+ * Make or repair the GO1 webhook, and give back the result as JSON.
+ *
+ * The button on the settings page sends the request. The answer is JSON, because the button
+ * shows the result on the settings page and does not go to a different page.
+ */
+function mod_goone_create_webhook_ajax(): void {
+    // Making a webhook changes the state of the site: it gives the webhook a new secret.
+    // Thus a user, a capability and a correct sesskey are necessary.
     require_login();
-    $context = context_system::instance();
-    require_capability('mod/goone:viewbulkcontent', $context);
+    require_capability('mod/goone:viewbulkcontent', context_system::instance());
     require_sesskey();
-    $PAGE->set_context($context);
-    $PAGE->set_pagelayout('admin');
-    $PAGE->set_url('/mod/goone/payload.php', ['create_webhook' => 1]);
-    $PAGE->set_title(get_string('logs_webhook', 'mod_goone'));
-    $PAGE->set_heading(get_string('logs_webhook', 'mod_goone'));
 
     $result = mod_goone_create_webhook();
 
-    echo $OUTPUT->header();
-    echo html_writer::tag('div', get_string($result, 'mod_goone'), array('class' => 'alert alert-primary', 'role' => 'alert'));
-    echo $OUTPUT->footer();
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => mod_goone_webhook_result_is_success($result),
+        'message' => get_string($result, 'mod_goone'),
+    ]);
 }

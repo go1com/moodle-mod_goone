@@ -150,4 +150,61 @@ class browser_js_test extends advanced_testcase {
             '/\.val\(\)\s*\.\s*map\s*\(/', $built,
             "amd/build/$module.min.js still calls .map() straight after .val().");
     }
+
+    /**
+     * The webhook button must ask the user to agree before it sends the request.
+     *
+     * The request gives the webhook a new secret, thus one unwanted press must not do it.
+     */
+    public function test_webhook_module_asks_before_it_sends(): void {
+        $source = $this->read('amd/src/webhook_admin.js');
+
+        $this->assertStringContainsString('saveCancelPromise', $source,
+            'amd/src/webhook_admin.js must ask the user to agree before it sends the request.');
+        $this->assertStringContainsString('goone-create-webhook', $source,
+            'amd/src/webhook_admin.js must listen to the button of the settings page.');
+    }
+
+    /**
+     * The webhook button must send a POST with a sesskey, and open no window.
+     */
+    public function test_webhook_module_sends_a_post_with_a_sesskey(): void {
+        $source = $this->read('amd/src/webhook_admin.js');
+
+        $this->assertStringContainsString("method: 'POST'", $source,
+            'The request must be a POST: it changes the state of the site.');
+        $this->assertStringContainsString('sesskey', $source,
+            'The request must hold a sesskey.');
+        $this->assertStringNotContainsString('window.open', $source,
+            'The button must not open a window.');
+    }
+
+    /**
+     * The built webhook module must hold the same behaviour as the source.
+     *
+     * Moodle serves amd/build, and not amd/src.
+     */
+    public function test_built_webhook_module_is_current(): void {
+        $built = $this->read('amd/build/webhook_admin.min.js');
+
+        foreach (['saveCancelPromise', 'goone-create-webhook', 'sesskey', 'create_webhook'] as $needle) {
+            $this->assertStringContainsString($needle, $built,
+                "amd/build/webhook_admin.min.js does not hold \"$needle\". Build the module again "
+                . "with \"npx grunt amd --root=mod/goone\".");
+        }
+    }
+
+    /**
+     * The settings page must hold the button, and no address that opens a window.
+     */
+    public function test_settings_page_holds_the_button(): void {
+        $source = $this->read('settings.php');
+
+        $this->assertStringContainsString('goone-create-webhook', $source,
+            'settings.php must hold the button that the module listens to.');
+        $this->assertStringContainsString("'type' => 'button'", $source,
+            'The button must have type="button", or it sends the settings form.');
+        $this->assertStringNotContainsString('create_webhook=1', $source,
+            'settings.php must not hold an address that makes the webhook. The button sends a POST.');
+    }
 }

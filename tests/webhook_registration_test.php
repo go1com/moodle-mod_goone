@@ -41,6 +41,7 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
  * @covers ::mod_goone_check_webhook
  * @covers ::mod_goone_create_webhook
  * @covers ::mod_goone_send_webhook_request
+ * @covers ::mod_goone_webhook_result_is_success
  */
 final class webhook_registration_test extends advanced_testcase {
 
@@ -210,5 +211,49 @@ final class webhook_registration_test extends advanced_testcase {
 
         $this->assertSame('old secret', get_config('mod_goone', 'goone_api_secret'));
         $this->assertSame(1, self::unused_mock_responses(), 'The code sent a create request');
+    }
+
+    /**
+     * Gives each result of mod_goone_create_webhook(), and if it is a success.
+     *
+     * @return array[] The result code, and the expected answer.
+     */
+    public static function result_code_provider(): array {
+        return [
+            'new webhook' => ['webhooknewcreatedgood', true],
+            'repaired webhook' => ['webhookrepaired', true],
+            'repair failed' => ['webhookrepairerror', false],
+            'request failed' => ['webhookcurlerror', false],
+            'no token' => ['tokennotdefined', false],
+        ];
+    }
+
+    /**
+     * The button on the settings page shows a success or an error from this answer.
+     *
+     * @dataProvider result_code_provider
+     * @param string $code The result of mod_goone_create_webhook().
+     * @param bool $expected If the result is a success.
+     */
+    public function test_result_is_success(string $code, bool $expected): void {
+        $this->assertSame($expected, mod_goone_webhook_result_is_success($code));
+    }
+
+    /**
+     * Each result code must have a message, because the answer to the button holds it.
+     *
+     * @dataProvider result_code_provider
+     * @param string $code The result of mod_goone_create_webhook().
+     */
+    public function test_result_has_a_message(string $code): void {
+        $this->assertTrue(get_string_manager()->string_exists($code, 'mod_goone'),
+            "No message for the result '$code'");
+    }
+
+    /**
+     * An unknown code must not be shown as a success.
+     */
+    public function test_unknown_result_is_not_a_success(): void {
+        $this->assertFalse(mod_goone_webhook_result_is_success('somethingelse'));
     }
 }
