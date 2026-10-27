@@ -28,6 +28,22 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
  'core/modal', 'core/modal_cancel', 'core/modal_events'],
     function($, BsMultiselect, Templates, Str, Notification, Ajax, Modal, ModalCancel, ModalEvents) {
         var browser = {};
+
+/*
+ * The multiselect library writes its button for one Bootstrap version only.
+ * Version 2.0.0 writes data-bs-toggle, which Bootstrap 5 reads. Moodle 4.5 loads
+ * Bootstrap 4, which reads data-toggle and leaves such a button shut.
+ *
+ * The button below carries BOTH attributes and the button class of both versions.
+ * Each Bootstrap reads the attribute it knows and ignores the other, thus one
+ * library serves Moodle 4.5 and Moodle 5.0 and later. Remove nothing here without
+ * running tests/behat/content_browser_filters.feature on 4.5 AND on 5.3.
+ */
+var GOONE_BUTTON = '<button type="button"'
+    + ' class="multiselect dropdown-toggle custom-select form-select"'
+    + ' data-toggle="dropdown" data-bs-toggle="dropdown">'
+    + '<span class="multiselect-selected-text"></span></button>';
+
         browser.offSet = 0;
         browser.initial = 0;
 
@@ -52,7 +68,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 $('#sort').change(function() {
                     browser.changeFilter();
                 });
-                $('#provider').multiselect({
+                $('#provider').multiselect({templates: {button: GOONE_BUTTON},
                     inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
@@ -64,7 +80,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#topic').multiselect({inheritClass: true,
+                $('#topic').multiselect({templates: {button: GOONE_BUTTON},inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
@@ -75,7 +91,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#duration').multiselect({inheritClass: true,
+                $('#duration').multiselect({templates: {button: GOONE_BUTTON},inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
@@ -86,7 +102,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#language').multiselect({inheritClass: true,
+                $('#language').multiselect({templates: {button: GOONE_BUTTON},inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
@@ -97,7 +113,7 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#type').multiselect({inheritClass: true,
+                $('#type').multiselect({templates: {button: GOONE_BUTTON},inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,

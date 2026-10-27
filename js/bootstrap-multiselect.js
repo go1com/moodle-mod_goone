@@ -42,6 +42,9 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 (function (root, factory) {
+    // MOODLE: Moodle has no knockout AMD module, and the knockout part of this
+    // library is not used. Thus the module is named, it asks only for jquery, and
+    // the check for knockout is left out. Keep this change at the next upgrade.
     if (typeof define === 'function' && define.amd &&
         typeof require === 'function' && typeof require.specified === 'function') {
 
@@ -455,15 +458,15 @@
             buttonTextAlignment: 'center',
             enableResetButton: false,
             templates: {
-                button: '<button type="button" class="multiselect dropdown-toggle" data-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
+                button: '<button type="button" class="multiselect form-select dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
                 popupContainer: '<div class="multiselect-container dropdown-menu"></div>',
-                filter: '<div class="multiselect-filter d-flex align-items-center"><i class="fas fa-sm fa-search text-muted"></i><input type="search" class="multiselect-search form-control" /></div>',
+                filter: '<div class="multiselect-filter d-flex align-items-center"><i class="fas fa-sm fa-search text-body-secondary"></i><input type="search" class="multiselect-search form-control" /></div>',
                 buttonGroup: '<div class="multiselect-buttons btn-group" style="display:flex;"></div>',
-                buttonGroupReset: '<button type="button" class="multiselect-reset btn btn-secondary btn-block"></button>',
+                buttonGroupReset: '<button type="button" class="multiselect-reset btn btn-secondary w-100"></button>',
                 option: '<button type="button" class="multiselect-option dropdown-item"></button>',
                 divider: '<div class="dropdown-divider"></div>',
                 optionGroup: '<button type="button" class="multiselect-group dropdown-item"></button>',
-                resetButton: '<div class="multiselect-reset text-center p-2"><button type="button" class="btn btn-sm btn-block btn-outline-secondary"></button></div>'
+                resetButton: '<div class="multiselect-reset text-center p-2"><button type="button" class="btn btn-sm w-100 btn-outline-secondary"></button></div>'
             }
         },
 
@@ -518,13 +521,13 @@
             if (this.options.buttonTextAlignment) {
                 switch (this.options.buttonTextAlignment) {
                     case 'left':
-                        this.$button.addClass('text-left');
+                        this.$button.addClass('text-start');
                         break;
                     case 'center':
                         this.$button.addClass('text-center');
                         break;
                     case 'right':
-                        this.$button.addClass('text-right');
+                        this.$button.addClass('text-end');
                         break;
                 }
             }
@@ -547,7 +550,7 @@
             this.$popupContainer = $(this.options.templates.popupContainer);
 
             if (this.options.dropRight) {
-                this.$container.addClass('dropright');
+                this.$container.addClass('dropend');
             }
             else if (this.options.dropUp) {
                 this.$container.addClass("dropup");
@@ -1148,7 +1151,7 @@
                     this.$popupContainer.prepend($(this.options.templates.divider));
                 }
 
-                var $option = $(this.options.templates.li || this.options.templates.option);
+                var $option = $(this.options.templates.option);
                 var $checkbox = this.createCheckbox($option, this.options.selectAllText, this.options.selectAllName,
                     this.options.selectAllValue, this.options.selectAllText, "checkbox", this.createAndApplyUniqueId(null));
 
@@ -1186,7 +1189,7 @@
                     else {
                         // Firefox does not support a clear button in search inputs right now therefore it must be added manually
                         if (this.isFirefox() && this.$filter.find(".multiselect-clear-filter").length === 0) {
-                            this.$filter.append("<i class='fas fa-times text-muted multiselect-clear-filter multiselect-moz-clear-filter'></i>");
+                            this.$filter.append("<i class='fas fa-times text-body-secondary multiselect-clear-filter multiselect-moz-clear-filter'></i>");
                         }
 
                         this.$filter.find(".multiselect-clear-filter").on('click', $.proxy(function (event) {
@@ -1740,7 +1743,7 @@
             }
 
             if (this.options.dropRight) {
-                this.$container.addClass('dropright');
+                this.$container.addClass('dropend');
             }
             else if (this.options.dropUp) {
                 this.$container.addClass('dropup');

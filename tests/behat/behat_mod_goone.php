@@ -150,9 +150,21 @@ class behat_mod_goone extends behat_base {
         $menu = $this->goone_filter_group($select)
             . "//div[contains(@class,'multiselect-container')]";
         $node = $this->getSession()->getPage()->find('xpath', $menu);
-        if (!$node || !$node->isVisible()) {
+
+        // Bootstrap puts the class "show" on the menu that it opens. Ask for that
+        // class as well as for the look of the menu. A menu that is only visible,
+        // without the class, is a menu that Bootstrap never opened and that some
+        // other style left on the page.
+        $state = $this->evaluate_script(
+            "(function () { var e = document.querySelector('#" . $select . "')"
+            . ".parentNode.querySelector('.multiselect-container');"
+            . " if (!e) { return 'no menu'; }"
+            . " return e.className + ' | display=' + getComputedStyle(e).display; })()");
+
+        if (!$node || !$node->isVisible() || strpos((string)$state, 'show') === false) {
             throw new ExpectationException(
-                "The menu of the GO1 filter '$select' did not open.", $this->getSession());
+                "The menu of the GO1 filter '$select' did not open. The menu is: $state",
+                $this->getSession());
         }
     }
 

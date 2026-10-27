@@ -124,7 +124,6 @@ span.multiselect-native-select select {
 .multiselect-container .multiselect-group .form-check-label,
 .multiselect-container .multiselect-all .form-check-label {
   cursor: pointer;
-  margin-left: 7px;
 }
 .multiselect-container .multiselect-option.active:not(.multiselect-active-item-fallback),
 .multiselect-container .multiselect-group.active:not(.multiselect-active-item-fallback),
@@ -155,7 +154,6 @@ span.multiselect-native-select select {
 }
 .form-inline .multiselect-container span.form-check {
   padding: 3px 20px 3px 40px;
-  justify-content: left;
 }
 .input-group.input-group-sm > .multiselect-native-select .multiselect {
   padding: 0.25rem 0.5rem;
