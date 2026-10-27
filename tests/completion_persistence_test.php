@@ -161,8 +161,8 @@ class completion_persistence_test extends advanced_testcase {
     /**
      * Moodle and the plugin must agree after a progress update.
      *
-     * This is the condition that failed before the fix. The activity showed as complete,
-     * but a new calculation of the completion data made it incomplete.
+     * A progress update that arrives after a completion must leave the activity
+     * complete. A new calculation of the completion data must give the same state.
      */
     public function test_completion_survives_a_recalculation(): void {
         goone_set_completion($this->cm, $this->user->id, '', 'completed');

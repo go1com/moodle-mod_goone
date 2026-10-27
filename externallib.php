@@ -56,7 +56,7 @@ class mod_goone_external extends external_api {
         self::validate_context($context);
         require_capability('mod/goone:addinstance', $context);
         // goone_get_hits() makes every value safe for the address of the request.
-        // Do not make the keyword safe again here: it would then be made safe twice.
+        // The keyword goes to it as the user wrote it.
         $result = goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset);
         return [
             'result' => $result,

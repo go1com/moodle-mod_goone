@@ -45,8 +45,8 @@ if ($iswebhook) {
     if ($viewlogs == 1 && $createwebhook == 0) {
         mod_goone_view_api_payload_logs();
     } else if ($viewlogs == 0 && $createwebhook == 1) {
-        // The webhook is made by the button on the settings page, which sends a POST.
-        // An address that is kept from an earlier release comes to here.
+        // The webhook is made by a POST from the button on the settings page. A GET
+        // makes no webhook: it only sends the user to the settings page.
         redirect(new moodle_url('/admin/settings.php', ['section' => 'modsettinggoone']));
     } else if ($viewlogs == 0 && $createwebhook == 0) {
         redirect($CFG->wwwroot);

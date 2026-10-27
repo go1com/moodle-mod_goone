@@ -63,9 +63,8 @@ final class search_test extends advanced_testcase {
     /**
      * The content browser must say that the request failed.
      *
-     * Before this check the code read a list that was not there. The page then
-     * showed no results and no number of results, and the user was not told that
-     * anything had failed.
+     * An answer without a list of hits is not usable. The browser must raise an
+     * error, in place of showing an empty list and an empty number of results.
      *
      * @dataProvider bad_answer_provider
      * @param string $answer The body that GO1 gives back.
@@ -93,8 +92,8 @@ final class search_test extends advanced_testcase {
     /**
      * Gives each value that must survive the trip to GO1.
      *
-     * A space is the value that broke the bulk content browser: curl refuses an
-     * address that holds a space, with "Malformed input to a URL function".
+     * curl refuses an address that holds a space, with the message "Malformed
+     * input to a URL function". A space must thus never reach the address.
      *
      * @return array[] The value, and the form it must take in the address.
      */
@@ -127,8 +126,7 @@ final class search_test extends advanced_testcase {
      * The code of both browsers must make its values safe.
      *
      * This reads the source, because the address of the request is built inside the
-     * function and is not given back. It is a guard against the encoding being
-     * dropped again.
+     * function and is not given back.
      */
     public function test_both_browsers_make_their_values_safe(): void {
         global $CFG;
@@ -152,9 +150,8 @@ final class search_test extends advanced_testcase {
     /**
      * The page must not make a tag safe a second time.
      *
-     * The module used to put %20 in place of each space before it sent a tag. The
-     * server now makes every value safe, thus the module must send the tag as the
-     * user chose it. Both together would give %2520.
+     * The server makes every value safe, thus the page sends each tag as the user
+     * chose it. A page that also makes the tag safe gives %2520 for a space.
      */
     public function test_the_page_does_not_make_a_tag_safe_again(): void {
         global $CFG;

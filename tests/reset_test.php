@@ -38,11 +38,10 @@ require_once($CFG->libdir . '/completionlib.php');
 /**
  * Tests that a course reset removes the GO1 progress.
  *
- * Before the fix, mod_goone did not give the reset callbacks. Moodle thus
- * listed GO1 as not supported on the reset page, and the rows in
- * goone_completion stayed after a reset. The completion rule reads those rows.
- * A learner who opened the activity again became complete at once, without
- * looking at the content.
+ * mod_goone gives the reset callbacks, thus Moodle offers GO1 on the reset page
+ * and removes the rows in goone_completion. The completion rule reads those rows:
+ * while a row stays, a learner who opens the activity again becomes complete at
+ * once, without looking at the content.
  *
  * @package   mod_goone
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

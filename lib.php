@@ -691,8 +691,8 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
     if ($curl->get_info()['http_code'] != 200) {
         throw new moodle_exception('go1apierror', 'mod_goone');
     }
-    // GO1 can answer 200 with a body that holds no hits. Say so, in place of
-    // reading a list that is not there.
+    // GO1 can answer 200 with a body that holds no list of hits. The answer is
+    // usable only when the list is there.
     if (!isset($response['hits']) || !is_array($response['hits'])) {
         throw new moodle_exception('go1apierror', 'mod_goone');
     }
@@ -1106,8 +1106,7 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
     }
     $response = bulk_mod_goone_api_custom_api_request("learning-objects?facets=instance,tag,language,topics&marketplace=all&".$params);
     // bulk_mod_goone_api_custom_api_request() gives back null when GO1 does not
-    // answer. Say so, as goone_get_hits() does. Without this the list is empty and
-    // the number of results is empty, and the user is not told that anything failed.
+    // answer. The answer is usable only when the list of hits is there.
     if (!isset($response['hits']) || !is_array($response['hits'])) {
         throw new moodle_exception('go1apierror', 'mod_goone');
     }

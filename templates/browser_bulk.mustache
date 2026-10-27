@@ -58,10 +58,10 @@
     height: inherit !important;
 }
 
-    /* Bootstrap 4 rules that Bootstrap 5 removed. Moodle 4.5 uses Bootstrap 4.
-       Moodle 5.0 and later use Bootstrap 5. These rules make the filter bar the
-       same on all versions. On Bootstrap 4 they agree with the framework, thus
-       Moodle 4.5 does not change. */
+    /* The filter bar uses .form-row, .form-group and a badge colour. Bootstrap 4
+       gives these rules and Bootstrap 5 does not. The plugin gives them here, with
+       the same values as Bootstrap 4, thus the filter bar looks the same under
+       Bootstrap 4 and under Bootstrap 5. */
     .goone-filters .form-row {
         display: flex;
         flex-wrap: wrap;
@@ -97,15 +97,15 @@
         color: inherit;
     }
     /* The multiselect library lines up the words of its button and of its menu
-       with Bootstrap classes that belong to ONE version: text-left on Bootstrap 4
-       and text-start on Bootstrap 5. Set the alignment here instead, thus the
-       filters read the same way on every Moodle version. The library option
-       buttonTextAlignment is set to false in the module, so that no utility class
-       with !important beats these rules.
+       with a Bootstrap class that belongs to ONE version: text-left under
+       Bootstrap 4, text-start under Bootstrap 5. The module gives the library
+       buttonTextAlignment false, thus the library adds no class and these rules
+       hold the alignment under every Bootstrap.
 
        The rules hang on .multiselect-native-select, which the library puts around
-       each select, and NOT on .goone-filters. When GO1 sends no facets the form
-       tag does not survive, thus .goone-filters is not always a parent here. */
+       each select. They do not hang on .goone-filters: the form tag reaches the
+       browser only when GO1 sends facets, thus .goone-filters is not always a
+       parent of a filter. */
     .multiselect-native-select button.multiselect,
     .multiselect-native-select .multiselect-container,
     .multiselect-native-select .multiselect-option,
@@ -116,9 +116,9 @@
 
     /* Each option holds a span.form-check with the checkbox and the words. Moodle
        has the rule ".form-inline .form-check { justify-content: center }", and the
-       filter bar is a form-inline, thus every option sat in the middle of its row.
-       That is flexbox, not text, so a text-align rule cannot correct it.
-       Three class names beat the two of the Moodle rule. */
+       filter bar is a form-inline, thus that rule applies to every option. It is
+       flexbox, which a text-align rule does not control. Three class names here
+       beat the two of the Moodle rule. */
     .multiselect-native-select .multiselect-container .form-check {
         justify-content: flex-start;
     }

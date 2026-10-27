@@ -43,8 +43,9 @@
  */
 (function (root, factory) {
     // MOODLE: Moodle has no knockout AMD module, and the knockout part of this
-    // library is not used. Thus the module is named, it asks only for jquery, and
-    // the check for knockout is left out. Keep this change at the next upgrade.
+    // library is not used. Thus the module carries the name BsMultiselect, it asks
+    // only for jquery, and it does not test for knockout. An upgrade of this
+    // library must keep these three points.
     if (typeof define === 'function' && define.amd &&
         typeof require === 'function' && typeof require.specified === 'function') {
 
