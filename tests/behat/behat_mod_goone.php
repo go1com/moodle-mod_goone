@@ -91,4 +91,131 @@ class behat_mod_goone extends behat_base {
         $names = $this->getSession()->getWindowNames();
         $this->getSession()->switchToWindow($names[1]);
     }
+
+    /**
+     * Gives the address of a page of this plugin, for "I am on the ... page".
+     *
+     * @param string $page The name of the page.
+     * @return moodle_url The address.
+     * @throws Exception When the name is not known.
+     */
+    protected function resolve_page_url(string $page): moodle_url {
+        switch (strtolower($page)) {
+            case 'bulk content browser':
+                return new moodle_url('/mod/goone/bulk.php');
+            default:
+                throw new Exception("mod_goone does not know the page '$page'.");
+        }
+    }
+
+    /**
+     * Gives the xpath of the group that holds one filter of the content browser.
+     *
+     * The multiselect library puts the <select> in a span, and puts its own group
+     * AFTER the select, inside that span. The group is thus a brother of the select
+     * and not a parent of it. Every part of a filter is found from the id of the
+     * select, which does not change.
+     *
+     * @param string $select The id of the select: type, tag, language, provider, topic
+     *                       or duration.
+     * @return string The xpath of the group.
+     */
+    protected function goone_filter_group(string $select): string {
+        return "//select[@id='" . $select . "']"
+            . "/following-sibling::div[contains(@class,'btn-group')][1]";
+    }
+
+    /**
+     * Presses the button of one filter of the GO1 content browser.
+     *
+     * @When /^I open the GO1 filter "([^"]*)"$/
+     * @param string $select The id of the select.
+     */
+    public function i_open_the_go1_filter(string $select) {
+        $button = $this->goone_filter_group($select) . "//button[contains(@class,'multiselect')]";
+        $this->execute('behat_general::i_click_on', [$button, 'xpath_element']);
+        $this->getSession()->wait(1000);
+    }
+
+    /**
+     * Checks that the menu of one filter is open.
+     *
+     * This is the check for the fault where the menu never opens, because the button
+     * carries the attribute of an older Bootstrap than the one the theme loads.
+     *
+     * @Then /^the GO1 filter "([^"]*)" is open$/
+     * @param string $select The id of the select.
+     */
+    public function the_go1_filter_is_open(string $select) {
+        $menu = $this->goone_filter_group($select)
+            . "//div[contains(@class,'multiselect-container')]";
+        $node = $this->getSession()->getPage()->find('xpath', $menu);
+        if (!$node || !$node->isVisible()) {
+            throw new ExpectationException(
+                "The menu of the GO1 filter '$select' did not open.", $this->getSession());
+        }
+    }
+
+    /**
+     * Presses one option in the open menu of a filter.
+     *
+     * @When /^I choose the GO1 filter option "([^"]*)" of "([^"]*)"$/
+     * @param string $option The words of the option.
+     * @param string $select The id of the select.
+     */
+    public function i_choose_the_go1_filter_option(string $option, string $select) {
+        $item = $this->goone_filter_group($select)
+            . "//button[contains(@class,'multiselect-option')][contains(normalize-space(.), '"
+            . $option . "')]";
+        $this->execute('behat_general::i_click_on', [$item, 'xpath_element']);
+        $this->getSession()->wait(2000);
+    }
+
+    /**
+     * Checks what the hidden select of a filter holds.
+     *
+     * The value of the select is what the plugin sends to GO1, thus this checks that
+     * the press reached the form and not only the look of the menu.
+     *
+     * @Then /^the GO1 filter "([^"]*)" holds "([^"]*)"$/
+     * @param string $select The id of the select.
+     * @param string $expected The value, or the word "nothing".
+     */
+    public function the_go1_filter_holds(string $select, string $expected) {
+        // Read every chosen option. The value of a select that takes more than one
+        // option gives only the FIRST chosen option, thus it hides the others.
+        // evaluate_script takes one expression, thus no statement may be used here.
+        $value = $this->evaluate_script(
+            "document.getElementById('" . $select . "') ? Array.prototype.map.call("
+            . "document.getElementById('" . $select . "').selectedOptions, function (o) {"
+            . " return o.value; }).join(',') : ''");
+        $held = (string)$value;
+        if ($expected === 'nothing') {
+            if ($held !== '') {
+                throw new ExpectationException(
+                    "The GO1 filter '$select' holds '$held', and nothing was expected.",
+                    $this->getSession());
+            }
+            return;
+        }
+        if (strpos($held, $expected) === false) {
+            throw new ExpectationException(
+                "The GO1 filter '$select' holds '$held', and '$expected' was expected.",
+                $this->getSession());
+        }
+    }
+
+    /**
+     * Presses the control that clears one filter.
+     *
+     * @When /^I clear the GO1 filter "([^"]*)"$/
+     * @param string $select The id of the select.
+     */
+    public function i_clear_the_go1_filter(string $select) {
+        $reset = $this->goone_filter_group($select) . "//*[contains(@class,'multiselect-reset')]"
+            . "//button | " . $this->goone_filter_group($select)
+            . "//button[contains(@class,'multiselect-reset')]";
+        $this->execute('behat_general::i_click_on', [$reset, 'xpath_element']);
+        $this->getSession()->wait(2000);
+    }
 }
