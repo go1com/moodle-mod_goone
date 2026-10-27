@@ -169,6 +169,36 @@ class behat_mod_goone extends behat_base {
     }
 
     /**
+     * Checks that the words of a filter start at the left.
+     *
+     * The library lines up its button with a Bootstrap class that belongs to one
+     * version only: text-left on Bootstrap 4 and text-start on Bootstrap 5. Both
+     * carry !important. The plugin switches that option off and sets the alignment
+     * in its own style, thus every version reads the same way. This step holds
+     * that result.
+     *
+     * @Then /^the GO1 filter "([^"]*)" is lined up at the left$/
+     * @param string $select The id of the select.
+     */
+    public function the_go1_filter_is_lined_up_at_the_left(string $select) {
+        $found = $this->evaluate_script(
+            '(function () {'
+            . ' var w = document.querySelector("#' . $select . '").parentNode;'
+            . ' var b = w.querySelector("button.multiselect");'
+            . ' var m = w.querySelector(".multiselect-container");'
+            . ' var o = w.querySelector(".multiselect-option");'
+            . ' return ["button=" + (b ? getComputedStyle(b).textAlign : "none"),'
+            . ' "menu=" + (m ? getComputedStyle(m).textAlign : "none"),'
+            . ' "option=" + (o ? getComputedStyle(o).textAlign : "none")].join(" "); })()');
+
+        if (strpos((string)$found, 'center') !== false || strpos((string)$found, 'right') !== false) {
+            throw new ExpectationException(
+                "The GO1 filter '$select' does not start at the left: $found",
+                $this->getSession());
+        }
+    }
+
+    /**
      * Presses one option in the open menu of a filter.
      *
      * @When /^I choose the GO1 filter option "([^"]*)" of "([^"]*)"$/

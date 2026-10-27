@@ -41,6 +41,12 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
  * library serves Moodle 4.5 and Moodle 5.0 and later. Remove nothing here without
  * running tests/behat/content_browser_filters.feature on 4.5 AND on 5.3.
  */
+// The library puts a Bootstrap class on the button to line up its words:
+// text-center by default, and text-start for 'left'. Both text-start and
+// text-left belong to ONE Bootstrap version only, and both carry !important,
+// thus neither can be corrected with a style rule. The option is switched off
+// with false, which adds no class at all, and the style rule in the template
+// lines the words up at the left in every version.
 var GOONE_BUTTON = '<button type="button"'
     + ' class="multiselect dropdown-toggle custom-select form-select"'
     + ' data-toggle="dropdown" data-bs-toggle="dropdown">'
@@ -71,7 +77,7 @@ var GOONE_BUTTON = '<button type="button"'
                 $('#sort').change(function() {
                     browser.changeFilter();
                 });
-                $('#provider').multiselect({templates: {button: GOONE_BUTTON},
+                $('#provider').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,
                     inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
@@ -83,7 +89,7 @@ var GOONE_BUTTON = '<button type="button"'
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#tag').multiselect({templates: {button: GOONE_BUTTON},inheritClass: true,
+                $('#tag').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
@@ -94,7 +100,7 @@ var GOONE_BUTTON = '<button type="button"'
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#language').multiselect({templates: {button: GOONE_BUTTON},inheritClass: true,
+                $('#language').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
@@ -105,7 +111,7 @@ var GOONE_BUTTON = '<button type="button"'
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#type').multiselect({templates: {button: GOONE_BUTTON},inheritClass: true,
+                $('#type').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
                     enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,

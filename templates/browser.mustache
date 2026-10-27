@@ -91,6 +91,23 @@
     .badge.badge-black {
         color: inherit;
     }
+    /* The multiselect library lines up the words of its button and of its menu
+       with Bootstrap classes that belong to ONE version: text-left on Bootstrap 4
+       and text-start on Bootstrap 5. Set the alignment here instead, thus the
+       filters read the same way on every Moodle version. The library option
+       buttonTextAlignment is set to false in the module, so that no utility class
+       with !important beats these rules.
+
+       The rules hang on .multiselect-native-select, which the library puts around
+       each select, and NOT on .goone-filters. When GO1 sends no facets the form
+       tag does not survive, thus .goone-filters is not always a parent here. */
+    .multiselect-native-select button.multiselect,
+    .multiselect-native-select .multiselect-container,
+    .multiselect-native-select .multiselect-option,
+    .multiselect-native-select .multiselect-group,
+    .multiselect-native-select .multiselect-all {
+        text-align: left;
+    }
 </style>
 
 

@@ -40,6 +40,7 @@ Feature: The filters of the GO1 content browser
     Then the GO1 filter "type" holds "nothing"
     When I open the GO1 filter "type"
     Then the GO1 filter "type" is open
+    And the GO1 filter "type" is lined up at the left
     When I choose the GO1 filter option "video" of "type"
     Then the GO1 filter "type" holds "video"
     When I choose the GO1 filter option "course" of "type"
@@ -77,6 +78,7 @@ Feature: The filters of the GO1 content browser
     Then the GO1 filter "type" holds "nothing"
     When I open the GO1 filter "type"
     Then the GO1 filter "type" is open
+    And the GO1 filter "type" is lined up at the left
     # The bulk browser writes the options of Type with a capital letter, and the
     # browser of the activity form writes them in small letters. The value that is
     # sent to GO1 is the same in both.
