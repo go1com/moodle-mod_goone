@@ -58,7 +58,7 @@ if ($ADMIN->fulltree) {
         $migratebutton = '<br/><br/> <a class="btn btn-primary" target="_blank" href="'
             . goone_signup_url() . '" role="button">' . get_string('oauth2_login', 'mod_goone') . '</a>';
        
-        $createitems = '<br/><br/> <a class="btn btn-primary" target="_blank" href="'
+        $createitems = '<a class="btn btn-primary" target="_blank" href="'
             .$CFG->wwwroot. '/mod/goone/bulk.php" role="button">' . get_string('createitems', 'mod_goone') . '</a>';
 
         $settings->add(new admin_setting_heading('createitems', get_string('createitemsheading', 'goone'), ''));
