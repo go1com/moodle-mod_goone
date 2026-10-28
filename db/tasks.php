@@ -20,6 +20,7 @@
  * @package   mod_goone
  * @copyright 2024 Esteban Echavarria (esteban.echavarria@openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die();

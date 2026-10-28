@@ -20,6 +20,7 @@
  * @package     mod_goone
  * @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author      Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 require_once('../../config.php');

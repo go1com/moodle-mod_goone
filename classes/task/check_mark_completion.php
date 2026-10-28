@@ -29,6 +29,7 @@ require_once($CFG->libdir.'/accesslib.php');
  * @package   mod_goone
  * @copyright 2024 Esteban Echavarria (esteban.echavarria@openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 class check_mark_completion extends \core\task\scheduled_task {
     /** @var int The number of enrolments in one GO1 response. 50 is the maximum of the GO1 API. */

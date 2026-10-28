@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD based on work by 2019 Jun Pataleta
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 namespace mod_goone\privacy;

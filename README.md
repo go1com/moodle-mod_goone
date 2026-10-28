@@ -97,9 +97,9 @@ This flag is set as an array:
 ## License
 
 Copyright (c) 2021 Open LMS (https://www.openlms.net)
+Copyright (c) 2025 onward Androgogic Pty Ltd (https://androgogic.com)
 
-This plugin was developed by eCreators PTY (https://ecreators.com.au/) and
-Open LMS for Go1.com (https://go1.com/).
+This plugin was originally developed by eCreators PTY (https://ecreators.com.au/) and Open LMS for Go1.com (https://go1.com/).
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software

@@ -18,6 +18,8 @@
  * Tests the guards on the filter selects of the content browser.
  *
  * @package   mod_goone
+ * @copyright 2025 onward Androgogic Pty Ltd
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

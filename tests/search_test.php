@@ -31,7 +31,8 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
  *
  * @package   mod_goone
  * @category  test
- * @copyright 2026, Androgogic
+ * @copyright 2025 onward Androgogic Pty Ltd
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers ::goone_get_hits
  * @covers ::bulk_mod_goone_get_hits

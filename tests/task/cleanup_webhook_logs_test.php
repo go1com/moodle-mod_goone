@@ -18,6 +18,8 @@
  * Tests for the scheduled task that deletes old rows of the GO1 webhook log.
  *
  * @package   mod_goone
+ * @copyright 2025 onward Androgogic Pty Ltd
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

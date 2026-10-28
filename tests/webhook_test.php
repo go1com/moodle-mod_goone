@@ -18,6 +18,8 @@
  * Tests for the processing of GO1 webhook events.
  *
  * @package   mod_goone
+ * @copyright 2025 onward Androgogic Pty Ltd
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

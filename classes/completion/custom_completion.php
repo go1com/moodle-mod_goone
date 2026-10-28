@@ -28,6 +28,7 @@ use core_completion\activity_custom_completion;
  *
  * @package mod_goone
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author  Kirill Astashov <kirill.astashov@androgogic.com>
  */
 class custom_completion extends activity_custom_completion {
 

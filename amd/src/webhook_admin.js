@@ -20,7 +20,8 @@
  * settings page. It does not open a different page.
  *
  * @module    mod_goone/webhook_admin
- * @copyright 2026, Androgogic
+ * @copyright 2025 onward Androgogic Pty Ltd
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
