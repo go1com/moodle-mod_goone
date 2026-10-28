@@ -40,8 +40,8 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Implementation of the privacy subsystem plugin provider for the goone activity module.
  *
- * @copyright  2019 eCreators PTY LTD based on work by 2019 Jun Pataleta
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright 2019 eCreators PTY LTD based on work by 2019 Jun Pataleta
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements
         // This plugin stores personal data.

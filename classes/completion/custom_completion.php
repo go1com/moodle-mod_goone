@@ -26,9 +26,10 @@ use core_completion\activity_custom_completion;
  * Class for defining mod_goone's custom completion rules and fetching the completion statuses
  * of the custom completion rules for a given goone instance and a user.
  *
- * @package mod_goone
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author  Kirill Astashov <kirill.astashov@androgogic.com>
+ * @package   mod_goone
+ * @copyright 2024 Esteban Echavarria (esteban.echavarria@openlms.net) based on work by Simey Lameze <simey@moodle.com>
+ * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 class custom_completion extends activity_custom_completion {
 

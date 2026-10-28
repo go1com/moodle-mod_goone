@@ -17,10 +17,10 @@
 /**
  * Process completion payload set by GO1
  *
- * @package     mod_goone
- * @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
- * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @author      Kirill Astashov <kirill.astashov@androgogic.com>
+ * @package   mod_goone
+ * @copyright 2022 Esteban Echavarria <esteban.echavarria@openlms.net>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 $ispost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
 // A webhook request from GO1 is a POST without the parameters of the other actions. It needs no

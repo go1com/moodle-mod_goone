@@ -17,9 +17,9 @@
 /**
  * Unit tests for (some of) mod/goone/lib.php.
  *
- * @package    mod_goone
- * @category   test
- * @copyright  2020 eCreators
+ * @package   mod_goone
+ * @category  test
+ * @copyright 2020 eCreators
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
  * @author    Kirill Astashov <kirill.astashov@androgogic.com>
@@ -37,7 +37,7 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
 /**
  * PHPUnit data generator testcase.
  *
- * @copyright  2020 eCreators
+ * @copyright 2020 eCreators
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
  */
