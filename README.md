@@ -1,7 +1,3 @@
-# Warning
-
-This is a beta version of the plugin, it is considered unstable and is not recommended for production. 
-
 # Go1 Module
 
 Go1 is a content company and as such they provide a content library of learning
@@ -14,7 +10,8 @@ This plugin allows Go1 content to be accessed directly in a Moodle instance.
 
 ## Requirements
 
-- A Moodle derived LMS (for example Open LMS).
+- A Moodle or Moodle derived LMS (for example Open LMS).
+- Compatible Moodle versions: 4.5 to 5.3.
 
 ## How to install
 
