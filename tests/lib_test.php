@@ -306,4 +306,26 @@ class lib_test extends advanced_testcase {
         $this->assertEquals(COMPLETION_COMPLETE, $DB->get_field('course_modules_completion', 'completionstate',
             ['coursemoduleid' => $goone->cmid, 'userid' => $student->id]));
     }
+
+    /**
+     * The bulk content browser gives the course the learning object ID as its idnumber. When the
+     * title of the learning object changes in GO1, the function must find the course by that ID,
+     * and must not make a second course.
+     */
+    public function test_bulk_mod_goone_create_course_finds_the_course_by_learning_object_id() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $loinfo = ['id' => 4242, 'title' => 'First title', 'description' => 'Summary', 'image' => ''];
+
+        $created = bulk_mod_goone_create_course($loinfo);
+        $this->assertEquals('4242', $DB->get_field('course', 'idnumber', ['id' => $created->id]));
+
+        $loinfo['title'] = 'Second title';
+        $found = bulk_mod_goone_create_course($loinfo);
+
+        $this->assertEquals($created->id, $found->id);
+        $this->assertEquals(1, $DB->count_records('course', ['idnumber' => '4242']));
+    }
 }

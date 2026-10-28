@@ -1383,7 +1383,7 @@ function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
         $data->enablecompletion = $coursedefaults->enablecompletion;
         $data->visible = $coursedefaults->visible;
         $data->startdate = time();
-        if ($coursefound = $DB->get_record('course', array('idnumber'=>$loinfo['title']))) {
+        if ($coursefound = $DB->get_record('course', array('idnumber'=>$loinfo['id']))) {
             return $coursefound;
         } else if ($coursefound = $DB->get_record('course', array('shortname'=>$loinfo['title']))) {
             return $coursefound;
