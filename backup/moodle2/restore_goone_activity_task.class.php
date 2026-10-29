@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -56,6 +57,7 @@ class restore_goone_activity_task extends restore_activity_task {
      */
     public static function define_decode_contents() {
         $contents = array();
+        $contents[] = new restore_decode_content('goone', array('intro'), 'goone');
         return $contents;
     }
 
@@ -65,6 +67,8 @@ class restore_goone_activity_task extends restore_activity_task {
      */
     public static function define_decode_rules() {
         $rules = array();
+        $rules[] = new restore_decode_rule('GOONEINDEX', '/mod/goone/index.php?id=$1', 'course');
+        $rules[] = new restore_decode_rule('GOONEVIEWBYID', '/mod/goone/view.php?id=$1', 'course_module');
         return $rules;
     }
 

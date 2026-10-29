@@ -20,6 +20,7 @@
  * @package   mod_goone
  * @copyright Copyright (c) 2021 Open LMS (https://www.openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 declare(strict_types=1);
@@ -49,7 +50,7 @@ class activity_custom_completion_test extends advanced_testcase {
      *
      * @return array[]
      */
-    public function get_state_provider(): array {
+    public static function get_state_provider(): array {
         return [
 
             'Rule available, user has submitted' => [
@@ -158,7 +159,7 @@ class activity_custom_completion_test extends advanced_testcase {
      *
      * @return array[]
      */
-    public function get_available_custom_rules_provider(): array {
+    public static function get_available_custom_rules_provider(): array {
         return [
             'Completion submit available' => [
                 COMPLETION_ENABLED, ['completionsubmit']

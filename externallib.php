@@ -21,13 +21,20 @@
  * @copyright 2020, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die;
 
-require_once("$CFG->libdir/externallib.php");
 require_once("$CFG->dirroot/user/externallib.php");
 require_once("$CFG->dirroot/mod/goone/lib.php");
+
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
+use core_external\external_single_structure;
+use core_external\external_value;
+use core_external\external_warnings;
 
 /**
  * mod_goone functions
@@ -45,9 +52,12 @@ class mod_goone_external extends external_api {
      * @param int $offset
      * @return external_function_parameters
      */
-    public static function get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset) {
-        // Avoid error when space in search term.
-        $keyword = urlencode($keyword); 
+    public static function get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset, $contextid) {
+        $context = context::instance_by_id($contextid);
+        self::validate_context($context);
+        require_capability('mod/goone:addinstance', $context);
+        // goone_get_hits() makes every value safe for the address of the request.
+        // The keyword goes to it as the user wrote it.
         $result = goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset);
         return [
             'result' => $result,
@@ -83,6 +93,8 @@ class mod_goone_external extends external_api {
                 'keyword' => new external_value(PARAM_TEXT, 'keyword', VALUE_REQUIRED, ''),
                 'sort' => new external_value(PARAM_TEXT, 'sort', VALUE_REQUIRED, ''),
                 'offset' => new external_value(PARAM_INT, 'offset', VALUE_DEFAULT, 0),
+                'contextid' => new external_value(PARAM_INT,
+                    'Context id of the course or module the activity is added to', VALUE_REQUIRED),
         ]);
     }
     /**
@@ -90,7 +102,10 @@ class mod_goone_external extends external_api {
      * @param string $loid
      * @return external_function_parameters
      */
-    public static function get_modal($loid) {
+    public static function get_modal($loid, $contextid) {
+        $context = context::instance_by_id($contextid);
+        self::validate_context($context);
+        require_capability('mod/goone:addinstance', $context);
         $result = goone_modal_overview($loid);
         return [
             'result' => $result,
@@ -116,7 +131,9 @@ class mod_goone_external extends external_api {
     public static function get_modal_parameters() {
         return new external_function_parameters([
                 'loid' => new external_value(PARAM_INT,
-                    'loid', VALUE_DEFAULT, 0)
+                    'loid', VALUE_DEFAULT, 0),
+                'contextid' => new external_value(PARAM_INT,
+                    'Context id of the course or module the activity is added to', VALUE_REQUIRED)
         ]);
     }
 
@@ -134,6 +151,9 @@ class mod_goone_external extends external_api {
      * @return external_function_parameters
      */
     public static function bulk_goone_get_hits($type, $topic, $language, $provider, $keyword, $sort, $offset, $loadmore, $duration) {
+        $context = context_system::instance();
+        self::validate_context($context);
+        require_capability('mod/goone:viewbulkcontent', $context);
         $result = bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, $sort, $offset, $loadmore, $duration);
         return [
             'result' => $result,
@@ -180,6 +200,9 @@ class mod_goone_external extends external_api {
      * @return external_function_parameters
      */
     public static function bulk_goone_get_modal($loid) {
+        $context = context_system::instance();
+        self::validate_context($context);
+        require_capability('mod/goone:viewbulkcontent', $context);
         $result = bulk_mod_goone_modal_overview($loid);
         return [
             'result' => $result,
@@ -226,6 +249,9 @@ class mod_goone_external extends external_api {
      * @return external_function_parameters
      */
     public static function bulk_goone_get_course_search_result($search) {
+        $context = context_system::instance();
+        self::validate_context($context);
+        require_capability('mod/goone:viewbulkcontent', $context);
         $result = bulk_mod_goone_modal_search_course_result($search);
         return [
             'result' => $result,
@@ -247,6 +273,9 @@ class mod_goone_external extends external_api {
 
 
     public static function bulk_goone_process_course_per_item($items) {
+        $context = context_system::instance();
+        self::validate_context($context);
+        require_capability('mod/goone:viewbulkcontent', $context);
         $result = bulk_mod_goone_process_course_per_item($items);   
         return [
             'result' => $result,
@@ -275,6 +304,9 @@ class mod_goone_external extends external_api {
     }
 
     public static function bulk_goone_process_course_single_course($items, $coursename) {
+        $context = context_system::instance();
+        self::validate_context($context);
+        require_capability('mod/goone:viewbulkcontent', $context);
         $result = bulk_mod_goone_process_course_single_course($items, $coursename);
         return [
             'result' => $result,
@@ -307,6 +339,9 @@ class mod_goone_external extends external_api {
 
 
     public static function bulk_goone_process_add_to_existing_course($course_section, $selecteditemsids) {
+        $context = context_system::instance();
+        self::validate_context($context);
+        require_capability('mod/goone:viewbulkcontent', $context);
         $result = bulk_mod_goone_process_add_to_existing_course($course_section, $selecteditemsids);
         return [
             'result' => $result,

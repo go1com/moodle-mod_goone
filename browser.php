@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 // TODO: Move javascript from mustache to AMD.
@@ -32,9 +33,7 @@ $id = required_param('id', PARAM_INT);
 
 require_login();
 goone_check_capabilities($mode, $id);
-
-
-$config = get_config('mod_goone');
+$browsecontext = goone_get_browse_context($mode, $id);
 
 if (!goone_tokentest()) {
     echo $OUTPUT->notification(get_string('connectionerror', 'goone'), 'notifyproblem');
@@ -49,7 +48,9 @@ $PAGE->set_pagelayout('embedded');
 $PAGE->set_title(get_string('contentbrowser', 'goone'));
 $PAGE->set_heading(get_string('contentbrowser', 'goone'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/mod/goone/css/bootstrap-multiselect.css'));
-$PAGE->requires->js_call_amd('mod_goone/browser', 'init');
+$PAGE->requires->jquery();
+$PAGE->requires->js('/mod/goone/js/bootstrap-multiselect.js');
+$PAGE->requires->js_call_amd('mod_goone/browser', 'init', array($browsecontext->id));
 
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('mod_goone/browser', $facets);

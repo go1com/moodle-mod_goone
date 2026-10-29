@@ -18,6 +18,7 @@
  * Static Text/HTML output for admin settings forms.
  *
  * @author    Guy Thomas <osdev@blackboard.com>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  * @copyright Copyright (c) 2017 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

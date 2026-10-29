@@ -21,13 +21,14 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 defined('MOODLE_INTERNAL') || die;
 
 use mod_goone\settings\setting_statictext;
 use mod_goone\settings\admin_setting_clientid_with_token_validator;
 
-global $ADMIN, $USER, $CFG;
+global $ADMIN, $USER, $CFG, $PAGE;
 if ($ADMIN->fulltree) {
 
     require_once("$CFG->libdir/resourcelib.php");
@@ -41,16 +42,24 @@ if ($ADMIN->fulltree) {
     if (empty($CFG->mod_goone_admin_users) || in_array($USER->username, $CFG->mod_goone_admin_users)) {
 
 
-        $createwebhook = '<a class="btn btn-primary" target="_blank" href="'
-        .$CFG->wwwroot. '/mod/goone/payload.php?create_webhook=1" role="button">' . get_string('createwebhook', 'mod_goone') . '</a>'; 
-       
+        // The button asks the user to agree, then sends the request and shows the result on
+        // this page. It must have type="button": the settings page is a form, and a button
+        // without a type sends that form.
+        $PAGE->requires->js_call_amd('mod_goone/webhook_admin', 'init');
+        $createwebhook = html_writer::tag('button', get_string('createwebhook', 'mod_goone'), [
+            'type' => 'button',
+            'class' => 'btn btn-primary',
+            'data-action' => 'goone-create-webhook',
+        ]);
+
+
         $webhooklogs = '<br/><br/> <a class="btn btn-primary" target="_blank" href="'
         .$CFG->wwwroot. '/mod/goone/payload.php?logs_view=1" role="button">' . get_string('viewwebhooklogs', 'mod_goone') . '</a>';
        
         $migratebutton = '<br/><br/> <a class="btn btn-primary" target="_blank" href="'
             . goone_signup_url() . '" role="button">' . get_string('oauth2_login', 'mod_goone') . '</a>';
        
-        $createitems = '<br/><br/> <a class="btn btn-primary" target="_blank" href="'
+        $createitems = '<a class="btn btn-primary" target="_blank" href="'
             .$CFG->wwwroot. '/mod/goone/bulk.php" role="button">' . get_string('createitems', 'mod_goone') . '</a>';
 
         $settings->add(new admin_setting_heading('createitems', get_string('createitemsheading', 'goone'), ''));
@@ -85,6 +94,20 @@ if ($ADMIN->fulltree) {
                 '2' => get_string('collectionsfilter', 'goone')
             )
         ));
+
+        $settings->add(new admin_setting_heading('othersettings',
+            get_string('othersettingsheading', 'goone'), ''));
+
+        $settings->add(new admin_setting_configselect('mod_goone/resetcompletion',
+            get_string('resetcompletion', 'goone'), get_string('resetcompletiondesc', 'goone'), '0',
+            array('0' => get_string('resetcompletionkeep', 'goone'),
+                '1' => get_string('resetcompletionremove', 'goone')
+            )
+        ));
+
+        $settings->add(new admin_setting_configduration('mod_goone/webhooklogretention',
+            get_string('webhooklogretention', 'goone'), get_string('webhooklogretentiondesc', 'goone'),
+            90 * DAYSECS, DAYSECS));
 
         $settings->add(new admin_setting_heading('partnersettings',
             get_string('partnersettingheading', 'goone'), ''));

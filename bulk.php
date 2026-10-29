@@ -17,9 +17,10 @@
 /**
  * Render GO1 Bulk content browser and search options
  *
- * @package     mod_goone
- * @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
- * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_goone
+ * @copyright 2022 Esteban Echavarria <esteban.echavarria@openlms.net>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 require_once('../../config.php');
@@ -28,7 +29,6 @@ require_once($CFG->dirroot.'/mod/goone/lib.php');
 require_login();
 require_capability('mod/goone:viewbulkcontent', context_system::instance());
 
-$config = get_config('mod_goone');
 if (!goone_tokentest()) {
     echo $OUTPUT->notification(get_string('connectionerror', 'mod_goone'), 'notifyproblem');
 }
@@ -43,7 +43,7 @@ $PAGE->set_heading(get_string('contentbank', 'mod_goone'));
 $PAGE->requires->css(new moodle_url($CFG->wwwroot . '/mod/goone/css/bootstrap-multiselect.css'));
 $PAGE->requires->js_call_amd('mod_goone/browser_bulk', 'init');
 $PAGE->requires->strings_for_js(
-    array('createcoursemodaltitle', 'searchcoursemodaltitle', 'noitemsselected', 'topics', 'language', 'type', 'providers', 'duration', 'coursename', 'coursenameempty', 'processingitems', 'toomanyitems', 'contenttype')
+    array('createcoursemodaltitle', 'searchcoursemodaltitle', 'noitemsselected', 'notopicselected', 'topics', 'language', 'type', 'providers', 'duration', 'coursename', 'coursenameempty', 'processingitems', 'toomanyitems', 'contenttype')
     , 'mod_goone');
 $PAGE->requires->strings_for_js(array('create', 'save'), 'moodle');
 echo $OUTPUT->header();

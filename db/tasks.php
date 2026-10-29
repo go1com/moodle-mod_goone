@@ -20,6 +20,7 @@
  * @package   mod_goone
  * @copyright 2024 Esteban Echavarria (esteban.echavarria@openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -27,9 +28,16 @@ defined('MOODLE_INTERNAL') || die();
 $tasks = array(
     array(
         'classname' => '\mod_goone\task\check_mark_completion',
-        'blocking' => 0,
-        'minute' => '*',
-        'hour' => '*',
+        'minute' => 'R',
+        'hour' => 'R',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*'
+    ),
+    array(
+        'classname' => '\mod_goone\task\cleanup_webhook_logs',
+        'minute' => 'R',
+        'hour' => 'R',
         'day' => '*',
         'month' => '*',
         'dayofweek' => '*'

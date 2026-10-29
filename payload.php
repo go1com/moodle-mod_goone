@@ -17,26 +17,39 @@
 /**
  * Process completion payload set by GO1
  *
- * @package     mod_goone
- * @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
- * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_goone
+ * @copyright 2022 Esteban Echavarria <esteban.echavarria@openlms.net>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
+$ispost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+// A webhook request from GO1 is a POST without the parameters of the other actions. It needs no
+// session, and NO_MOODLE_COOKIES must be defined before config.php starts the session.
+$iswebhook = $ispost && empty($_GET['logs_view']) && empty($_POST['logs_view'])
+    && empty($_GET['create_webhook']) && empty($_POST['create_webhook']);
+if ($iswebhook) {
+    define('NO_MOODLE_COOKIES', true);
+}
+
 require_once("../../config.php");
 require_once($CFG->dirroot."/mod/goone/lib.php");
-global $CFG;
 
 $viewlogs = optional_param('logs_view', 0, PARAM_INT);
-$create_webhook = optional_param('create_webhook', 0, PARAM_INT);
+$createwebhook = optional_param('create_webhook', 0, PARAM_INT);
 
-if($_SERVER['REQUEST_METHOD'] !== 'POST' && $viewlogs == 1 && $create_webhook == 0) {
-	mod_goone_view_api_payload_logs();
-}
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $viewlogs == 0 && $create_webhook == 0 ) {
-	mod_goone_api_payload_process_post();
-} 
-if ($viewlogs == 0 && $create_webhook == 1 && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-	mod_goone_create_webhook_api_request();
-}
-if($_SERVER['REQUEST_METHOD'] !== 'POST' && $viewlogs == 0 && $create_webhook == 0){
-	redirect($CFG->wwwroot);
+if ($iswebhook) {
+    mod_goone_api_payload_process_post();
+} else if ($ispost && $createwebhook == 1) {
+    // The button on the settings page sends this request. It gives back JSON, not a page.
+    mod_goone_create_webhook_ajax();
+} else if (!$ispost) {
+    if ($viewlogs == 1 && $createwebhook == 0) {
+        mod_goone_view_api_payload_logs();
+    } else if ($viewlogs == 0 && $createwebhook == 1) {
+        // The webhook is made by a POST from the button on the settings page. A GET
+        // makes no webhook: it only sends the user to the settings page.
+        redirect(new moodle_url('/admin/settings.php', ['section' => 'modsettinggoone']));
+    } else if ($viewlogs == 0 && $createwebhook == 0) {
+        redirect($CFG->wwwroot);
+    }
 }

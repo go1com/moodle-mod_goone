@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -28,7 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Data generator class for mod_goone.
  *
- * @package    mod_goone
+ * @package   mod_goone
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>

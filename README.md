@@ -10,7 +10,8 @@ This plugin allows Go1 content to be accessed directly in a Moodle instance.
 
 ## Requirements
 
-- A Moodle derived LMS (for example Open LMS).
+- A Moodle or Moodle derived LMS (for example Open LMS).
+- Compatible Moodle versions: 4.5 to 5.3.
 
 ## How to install
 
@@ -90,12 +91,24 @@ This flag is set as an array:
    Go1 when accessing the Go1 settings. Not setting this flag has the opposite
    effect of allowing any admin user to change the Go1 settings.
 
+## Known issues and to do
+
+   - When a course creator adds an activity and selects a Go1 learning object,
+   fill in the activity name automatically.
+   - Improve the modal windows of the bulk content browser. The buttons and
+     the messages are not clear.
+   - Update the plugin to version 3 of the Go1 API.
+   - Add a plugin setting for the course category of the courses that the bulk
+   content browser creates. At the moment, an administrator selects this
+   category on the course request settings page (`/admin/settings.php?section=courserequest`),
+   which is not part of the plugin settings.
+
 ## License
 
 Copyright (c) 2021 Open LMS (https://www.openlms.net)
+Copyright (c) 2025 onward Androgogic Pty Ltd (https://androgogic.com)
 
-This plugin was developed by eCreators PTY (https://ecreators.com.au/) and
-Open LMS for Go1.com (https://go1.com/).
+This plugin was originally developed by eCreators PTY (https://ecreators.com.au/) and Open LMS for Go1.com (https://go1.com/).
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software

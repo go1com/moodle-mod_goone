@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 require_once('../../config.php');
@@ -37,13 +38,13 @@ if ($newwin == 1) {
 }
 
 if (!$cm = get_coursemodule_from_id('goone', $cmid, 0, true, MUST_EXIST)) {
-    throw new moodle_exception(get_string('cmidincorrect', 'goone'));
+    throw new moodle_exception('cmidincorrect', 'mod_goone');
 }
 if (!$course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST)) {
-    throw new moodle_exception(get_string('courseincorrect', 'goone'));
+    throw new moodle_exception('courseincorrect', 'mod_goone');
 }
 if (!$goone = $DB->get_record('goone', array('id' => $cm->instance))) {
-    throw new moodle_exception(get_string('cmincorrect', 'goone'));
+    throw new moodle_exception('cmincorrect', 'mod_goone');
 }
 
 require_login($course, true, $cm);
@@ -67,7 +68,7 @@ if ($newwin == 1) {
     $PAGE->set_pagelayout('embedded');
 }
 $isnewwin = $DB->get_field('goone', 'popup', array('id' => $goone->id));
-if ($isnewwin == 1 && $newwin == 0) {
+if ($isnewwin && !$newwin) {
     echo $OUTPUT->header();
     echo get_string('opennewwin', 'goone');
     $urltogo = new moodle_url('/mod/goone/view.php', array('id' => $cm->id));
@@ -97,9 +98,17 @@ if (!empty($sstate)) {
         sesskey(), "6", "1", $sstate->cmistate, $cmid, "GO1", false, true, "3")
     );
 }
+// The backup does not carry the launch token, thus a restored activity has none.
+// Get the token from GO1 and keep it for the next view.
+if (empty($goone->token)) {
+    $goone->token = goone_download_scorm($goone->loid);
+    $DB->set_field('goone', 'token', $goone->token, array('id' => $goone->id));
+}
 $data = array (
-    'token' => $goone->token,
-    'loid' => $goone->loid,
+    'scormpackage' => json_encode(
+        array('token' => (string) $goone->token, 'version' => '1.2', 'id' => (int) $goone->loid),
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+    ),
 );
 echo $OUTPUT->render_from_template('mod_goone/view', $data);
 

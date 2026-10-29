@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 require_once('../../config.php');
@@ -29,5 +30,5 @@ require_login();
 $id = required_param('id', PARAM_INT);
 
 if (!$course = $DB->get_record('course', array('id' => $id))) {
-    throw new moodle_exception('Course ID is incorrect');
+    throw new moodle_exception('invalidcourseid', 'error');
 }

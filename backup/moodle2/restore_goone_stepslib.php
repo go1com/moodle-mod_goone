@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -46,7 +47,7 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
         $paths[] = new restore_path_element('goone', '/activity/goone');
 
         if ($userinfo) {
-            $paths[] = new restore_path_element('goone_completion', '/activity/goone/goonecompletions/goonecompletion');
+            $paths[] = new restore_path_element('goone_completion', '/activity/goone/goonecompletions/goone_completion');
         }
 
         // Return the paths wrapped into standard activity structure.
@@ -65,11 +66,6 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
         $oldid = $data->id;
         $data->course = $this->get_courseid();
 
-        // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
-        // See MDL-9367.
-        $data->timeopen = $this->apply_date_offset($data->timeopen);
-        $data->timeclose = $this->apply_date_offset($data->timeclose);
-
         // Insert the goone record.
         $newitemid = $DB->insert_record('goone', $data);
         // Immediately after inserting "activity" record, call this.
@@ -85,17 +81,18 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
 
         $data = (object)$data;
 
-        $data->goone_id = $this->get_new_parentid('goone');
-        $data->user_id = $this->get_mappingid('user', $data->userid);
+        $data->gooneid = $this->get_new_parentid('goone');
+        $data->userid = $this->get_mappingid('user', $data->userid);
         $newitemid = $DB->insert_record('goone_completion', $data);
         // No need to save this mapping as far as nothing depend on it
         // (child paths, file areas nor links decoder).
     }
     /**
-     * Unused function
+     * Restore the files of the goone activity.
      * @return void
      */
     protected function after_execute() {
         // Add goone related files, no need to match by itemname (just internally handled context).
+        $this->add_related_files('mod_goone', 'intro', null);
     }
 }

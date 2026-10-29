@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 require_once('../../config.php');
@@ -71,7 +72,9 @@ if ((!empty($scoid)) && confirm_sesskey()) {
         }
         if ($element == 'cmi.core.lesson_status' && $value == 'passed') {
             $netelement = preg_replace('/\.N(\d+)\./', "\.\$1\.", $element);
-            $result = goone_set_completion($cm, $USER->id, '', "completed");
+            if ($cm->completion == 2 && $goone->completionsubmit) {
+                $result = goone_set_completion($cm, $USER->id, '', "completed");
+            }
         }
     }
     if ($result) {

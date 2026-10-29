@@ -14,14 +14,13 @@ Feature: Add a GO1 activity
       | user     | course | role           |
       | teacher1 | c1     | editingteacher |
       | student1 | c1     | student        |
-    And the following config values are set as admin:
-      | theme | snap |
     When I log in as "teacher1"
     And I am on "Course1" course homepage
+    And I turn editing mode on
     And I open the activity chooser
-    And I follow "Add a new GO1 content item"
+    And I add a GO1 content item from the activity chooser
     And I set the following fields to these values:
       | Name | Activity1 |
     And I click on "Open GO1 Content Browser" "button"
-    And I switch to the browser tab opened by the app
+    And I switch to the GO1 content browser window
     And I switch to the main window

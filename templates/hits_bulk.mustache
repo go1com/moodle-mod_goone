@@ -17,9 +17,10 @@
 {{!
   GO1 Activity Module.
 
-   @package     mod_goone
-   @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
-   @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+   @package   mod_goone
+   @copyright 2022 Esteban Echavarria <esteban.echavarria@openlms.net>
+   @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+   @author    Kirill Astashov <kirill.astashov@androgogic.com>
 }}
 
 
@@ -35,7 +36,7 @@
             <div class="overflow-hidden item-image-element" style="background-image:url({{{image}}});" ></div>
         </td>
         <td>
-            <a id="lomodal" class="lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;font-weight: bold;font-size: 12pt;">
+            <a class="lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;font-weight: bold;font-size: 12pt;">
                 {{title}}
             </a>
             <br>
@@ -103,7 +104,7 @@
     </div>
     <div class="col-md-6">
         <div class="dropdown" style="float:right;margin-bottom:15px;">
-          <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             {{# str }} add, moodle {{/ str }}
           </button>
           <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -144,7 +145,7 @@
             <div class="overflow-hidden item-image-element" style="background-image:url({{{image}}});" ></div>
         </td>
         <td>
-            <a id="lomodal" class="lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;font-weight: bold;font-size: 12pt;">
+            <a class="lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;font-weight: bold;font-size: 12pt;">
                 {{title}}
             </a>
             <br>

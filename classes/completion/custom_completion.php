@@ -26,8 +26,10 @@ use core_completion\activity_custom_completion;
  * Class for defining mod_goone's custom completion rules and fetching the completion statuses
  * of the custom completion rules for a given goone instance and a user.
  *
- * @package mod_goone
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   mod_goone
+ * @copyright 2024 Esteban Echavarria (esteban.echavarria@openlms.net) based on work by Simey Lameze <simey@moodle.com>
+ * @license  http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 class custom_completion extends activity_custom_completion {
 
@@ -45,12 +47,15 @@ class custom_completion extends activity_custom_completion {
 
         // Get goone details.
         if (!($goone = $DB->get_record('goone', array('id' => $this->cm->instance)))) {
-            throw new \moodle_exception("Can't find goone {$this->cm->instance}");
+            throw new \moodle_exception('invalidcoursemodule', 'error', '', null, 'goone instance ID: ' . $this->cm->instance);
         }
 
         $locomplete = $DB->get_field('goone_completion', 'completed', ['userid' => $userid, 'gooneid' => $goone->id]);
         if ($rule == 'completionsubmit') {
             $status = $locomplete == 2;
+        } else {
+            // A new rule in get_defined_custom_rules() must also get a branch here.
+            throw new \coding_exception("Unsupported custom completion rule '$rule'");
         }
         return $status ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
     }

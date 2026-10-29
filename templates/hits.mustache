@@ -17,16 +17,17 @@
 {{!
   GO1 Activity Module.
 
-  @package    mod_goone
-  @copyright  2019, eCreators PTY LTD
-  @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-  @author     Fouad Saikali <fouad@ecreators.com.au>
+  @package   mod_goone
+  @copyright 2019, eCreators PTY LTD
+  @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+  @author    Fouad Saikali <fouad@ecreators.com.au>
+  @author    Kirill Astashov <kirill.astashov@androgogic.com>
 }}
 
 <h2 class="go1-result" style="display:none;">{{# str }} results, mod_goone {{/ str }}: <span id=total-hits>{{ total }}</span></h2>
 {{#hits}}
 
-<a id="lomodal" class="lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;">
+<a class="lomodal" data-id="{{id}}" data-name="{{title}}" style="cursor: pointer;">
  <div class="card container my-3">
     <div class="h100" >
         <div class="row" style="overflow:hidden;"  style="height:160px;max-height:160px">

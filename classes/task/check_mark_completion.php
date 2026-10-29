@@ -19,6 +19,9 @@ namespace mod_goone\task;
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot.'/mod/goone/lib.php');
+require_once($CFG->libdir.'/completionlib.php');
+require_once($CFG->libdir.'/enrollib.php');
+require_once($CFG->libdir.'/accesslib.php');
 
 /**
  * A schedule task for goone cron.
@@ -26,8 +29,12 @@ require_once($CFG->dirroot.'/mod/goone/lib.php');
  * @package   mod_goone
  * @copyright 2024 Esteban Echavarria (esteban.echavarria@openlms.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 class check_mark_completion extends \core\task\scheduled_task {
+    /** @var int The number of enrolments in one GO1 response. 50 is the maximum of the GO1 API. */
+    const PAGESIZE = 50;
+
     /**
      * Get a descriptive name for this task (shown to admins).
      *
@@ -43,172 +50,100 @@ class check_mark_completion extends \core\task\scheduled_task {
     public function execute() {
         global $CFG, $DB;
 
-        //Local internal completion checks.
-        try {
-            // Get comletions from activity table.
-            $goonecompletions = $DB->get_records('goone_completion', ['completed'=>2]);
-
-            foreach ($goonecompletions as $gcid => $gcrecord) {
-                //Get moodle course module completion record.
-                $module = $DB->get_record('modules', ['name'=>'goone']);
-                    $gooneactivity = $DB->get_record('goone', ['id'=>$gcrecord->gooneid]);
-                    $cm = $DB->get_record('course_modules', ['module'=>$module->id,
-                        'course'=>$gooneactivity->course, 'instance'=>$gcrecord->instance]);
-                $lmscompletion = $DB->get_record('course_modules_completion',
-                    ['coursemoduleid'=>$cm->id, 'userid'=>$gcrecord->userid]);
-                if (!empty($lmscompletion)) {
-                    //If record completed in activity tables and not in
-                    //course module completion then mark it as complete in moodle.
-                    if(isset($lmscompletion->completionstate) && $lmscompletion->completionstate <> 1){
-                        $lmscompletion->completionstate = 1;
-                        if (isset($gcrecord->timemodified) && $gcrecord->timemodified > 0) {
-                            //Set timemodified from goone completion table.
-                            $lmscompletion->timemodified = $gcrecord->timemodified;
-                        } else {
-                            //Set timemodified as current timestamp as correct timemodified date not found.
-                            $lmscompletion->timemodified = time();
-                        }
-                        $DB->update_record('course_modules_completion', $lmscompletion);
-                        goone_set_completion($cm, $gcrecord->userid, '', "completed");
-                    }
-
-                    //Check viewed and mark it.
-                    $lmsviewed = $DB->get_record('course_modules_viewed',
-                    ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
-                    if (empty($lmsviewed)) {
-                        $newviewed = new \stdClass();
-                        if (isset($gcrecord->timemodified) && $gcrecord->timemodified > 0) {
-                            //Set timemodified from goone completion table.
-                            $newviewed->timecreated = $gcrecord->timemodified;
-                        } else {
-                            //Set timemodified as current timestamp as correct timemodified date not found.
-                            $newviewed->timecreated = time();
-                        }
-                        $newviewed->timecreated = time();
-                        $newviewed->coursemoduleid = $cm->id;
-                        $newviewed->userid = $user->id;
-                        $DB->insert_record('course_modules_viewed', $newviewed);
-                    }
-
-                } else {
-                    //Check viewed and mark it.
-                    $lmsviewed = $DB->get_record('course_modules_viewed',
-                    ['coursemoduleid'=>$cm->id, 'userid'=>$gcrecord->userid]);
-                    if (empty($lmsviewed)) {
-                        $newviewed = new \stdClass();
-                        if (isset($gcrecord->timemodified) && $gcrecord->timemodified > 0) {
-                            //Set timemodified from goone completion table.
-                            $lmsviewed->timecreated = $gcrecord->timemodified;
-                        } else {
-                            //Set timemodified as current timestamp as correct timemodified date not found.
-                            $lmsviewed->timecreated = time();
-                        }
-                        $newviewed->timecreated = time();
-                        $newviewed->coursemoduleid = $cm->id;
-                        $newviewed->userid = $gcrecord->userid;
-                        $DB->insert_record('course_modules_viewed', $lmsviewed);
-                        goone_set_completion($cm, $gcrecord->userid, '', "completed");
-                    }
-
-                    // Insert the course completion record.
-                    $module = $DB->get_record('modules', ['name'=>'goone']);
-                    $gooneactivity = $DB->get_record('goone', ['id'=>$gcrecord->gooneid]);
-                    $cm = $DB->get_record('course_modules', ['module'=>$module->id,
-                        'course'=>$gooneactivity->course, 'instance'=>$gcrecord->instance]);
-                    $newcmc = new \stdClass();
-                    $newcmc->coursemoduleid = $cm->id;
-                    $newcmc->userid = $gcrecord->userid;
-                    $newcmc->completionstate = 1;
-                    $newcmc->timemodified = $gcrecord->timemodified;
-                    $DB->insert_record('course_modules_completion', $lmscompletion);
-                }
-            }
-            $status = true;
-        } catch (moodle_exception $e) {
-            $status = false;
-        }
+        $starttime = microtime();
+        $debugging = true;
+        $status = true;
 
         //API completion checks
-        try {
-            //Get enrolments for all the user in all goone lo_ids.
-            $gooneactivities  = $DB->get_records('goone');
-            if (empty($gooneactivities)) {
-                return true;
+        $comps = $apireqs = 0;
+        //Get enrolments for all the user in all goone lo_ids.
+        $gooneactivities  = $DB->get_records('goone');
+        if (empty($gooneactivities)) {
+            return true;
+        }
+        $module = $DB->get_record('modules', ['name'=>'goone']);
+        foreach ($gooneactivities as $goone) {
+            //Get course module.
+            $cm = $DB->get_record('course_modules', ['course' => $goone->course, 'module' => $module->id, 'instance' => $goone->id]);
+            if (!$cm) {
+                mtrace("Skip: goone->id $goone->id has no course module");
+                continue;
             }
-            $module  = $DB->get_record('modules', ['name'=>'goone']);
-            foreach ($gooneactivities as $ids => $goone) {
-                //Get enrolments completed from goone.
-                $goonecompletedenrollments = bulk_mod_goone_api_custom_api_request("enrollments" , "", ['lo_id'=>$goone->loid, 'status'=>'completed', '']);
-                //Get course module.
-                $cm = $DB->get_record('course_modules', ['course'=>$goone->course,'module'=>$module->id,'instance'=>$goone->id]);
-                foreach ($goonecompletedenrollments['hits'] as $index => $hit) {
-                    //Get user details from goone.
-                    $enrolleduserinfo = bulk_mod_goone_api_custom_api_request('users', $hit['user_id']);
-                    $userinfofromgo = bulk_mod_goone_api_custom_api_request('user-accounts', $enrolinfo['user_id']);
-
-                    //Search user by email, firstname and lastname and username (external_user_id).
-                    if (!$user = $DB->get_record('user', array('email'=>$enrolleduserinfo['email']))) {
-                        $user = $DB->get_record('user', array('firstname'=>$enrolleduserinfo['first_name'], 'lastname'=>$enrolleduserinfo['last_name']));
-                        if (!$user) {
-                            $user = $DB->get_record_sql('SELECT * FROM {user} WHERE CONCAT(firstname, " ", lastname) = "'.$enrolleduserinfo['first_name']." ".$enrolleduserinfo['last_name'].'"');
-                        }
-
-                        if (!$user) {
-                            //Search users by external id which is username
-                            if (!empty($userinfofromgo)) {
-                                if (isset($userinfofromgo['standard_fields']['external_user_id'])) {
-                                    $user = $DB->get_record('user', array('username'=>$userinfofromgo['standard_fields']['external_user_id'])); 
-                                }
-                            }   
-                        }
-                        if (!$user) {
-                            continue;
-                        }
+            //Get enrolments completed from goone, one page at a time.
+            if ($debugging) mtrace("Requesting: course $goone->course goone->id $goone->id lo_id $goone->loid");
+            $hits = [];
+            $params = ['lo_ids' => $goone->loid, 'status' => 'completed', 'limit' => self::PAGESIZE, 'offset' => 0];
+            do {
+                $response = bulk_mod_goone_api_custom_api_request("enrollments", "", $params);
+                $apireqs++;
+                if (!isset($response['hits'])) {
+                    mtrace("Error: no enrolment list from GO1 for lo_id $goone->loid");
+                    $status = false;
+                    break;
+                }
+                $hits = array_merge($hits, $response['hits']);
+                $params['offset'] += self::PAGESIZE;
+            } while (count($response['hits']) == self::PAGESIZE && $params['offset'] < ($response['total'] ?? 0));
+            $course = $DB->get_record('course', ['id' => $goone->course]);
+            $completion = new \completion_info($course);
+            foreach ($hits as $index => $hit) {
+                // An error for one enrolment must not stop the task for the other enrolments.
+                try {
+                    if (!mod_goone_enrolment_is_completed($hit)) {
+                        continue;
                     }
-                    //Get course module completion record, if not found
-                    //will be created if found will be updated only if completionstatus not as 1 (completed).
-                    $cmc = $DB->get_record('course_modules_completion', ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
-                    if (!empty($cmc)) {
-                        if (isset($cmc->completionstate) && $cmc->completionstate <> 1) {
-                            $cmc->completionstate = 1;
-                            $cmc->timemodified = strtotime($hits['end_date']);
-                            $DB->update_record('course_modules_completion', $cmc);
+                    //Get user details from goone.
+                    if (($user = goone_get_moodle_user($hit['user_id'])) == false) {
+                        continue;
+                    }
+                    $apireqs++;
+
+                    // Ensure the user is enrolled in course.
+                    $context = \context_course::instance($goone->course);
+                    if (!is_enrolled($context, $user)) {
+                        continue;
+                    }
+
+                    // Set CM viewed.
+                    $lmsviewed = $DB->record_exists('course_modules_viewed', ['coursemoduleid' => $cm->id, 'userid' => $user->id]);
+                    if (!$lmsviewed) {
+                        $completion->set_module_viewed($cm, $user->id);
+                    }
+
+                    // Mark completion.
+                    if ($debugging) mtrace("Loid: $goone->loid userid: $user->id course $course->id cm $cm->id goone $goone->id ", '');
+                    if ($completion->is_enabled($cm) && $cm->completion == 2 && $goone->completionsubmit) {
+                        if ($debugging) mtrace(" - proceed ", '');
+                        // "Student must finish the Learning Object to complete it"
+                        // Use the goone_completion value to make this decision. The value in
+                        // course_modules_completion can show complete while goone_completion is
+                        // not yet 2. If you read course_modules_completion, the task stops and
+                        // the two records stay different. Moodle then makes the activity
+                        // incomplete at the next calculation of the completion data.
+                        $locomplete = $DB->get_field('goone_completion', 'completed',
+                            ['gooneid' => $goone->id, 'userid' => $user->id]);
+                        if ($locomplete != 2) {
                             goone_set_completion($cm, $user->id, '', "completed");
-                        }
-                        //Check viewed and mark it.
-                        $lmsviewed = $DB->get_record('course_modules_viewed',
-                        ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
-                        if (empty($lmsviewed)) {
-                            $newviewed = new \stdClass();
-                            $newviewed->timecreated = time();
-                            $newviewed->coursemoduleid = $cm->id;
-                            $newviewed->userid = $user->id;
-                            $DB->insert_record('course_modules_viewed', $newviewed);
+                            if ($debugging) mtrace("set");
+                        } else {
+                            if ($debugging) mtrace("skip: goone_completion.completed $locomplete");
                         }
                     } else {
-                        $newcmc = new \stdClass();
-                        $newcmc->coursemoduleid = $cm->id;
-                        $newcmc->userid = $user->id;
-                        $newcmc->completionstate = 1;
-                        $newcmc->timemodified = strtotime($hit['end_date']);
-                        $DB->insert_record('course_modules_completion', $newcmc);
-                        goone_set_completion($cm, $user->id, '', "completed");
-                        //Check viewed and mark it.
-                        $lmsviewed = $DB->get_record('course_modules_viewed',
-                        ['coursemoduleid'=>$cm->id, 'userid'=>$user->id]);
-                        if (empty($lmsviewed)) {
-                            $newviewed = new \stdClass();
-                            $newviewed->timecreated = time();
-                            $newviewed->coursemoduleid = $cm->id;
-                            $newviewed->userid = $user->id;
-                            $DB->insert_record('course_modules_viewed', $newviewed);
-                        }
+                        if ($debugging) mtrace(" - skip: cm->completion $cm->completion completionsubmit $goone->completionsubmit");
                     }
+                    $comps++;
+                } catch (\moodle_exception $e) {
+                    mtrace("Error: lo_id $goone->loid GO1 user {$hit['user_id']}: " . $e->getMessage());
+                    $status = false;
                 }
             }
-        } catch (moodle_exception $e) {
-            $status = false;
+            if ($debugging) mtrace("");
         }
+
+        $endtime = microtime();
+        $difftime = microtime_diff($starttime, $endtime);
+        $starttime = $endtime;
+        mtrace("API completion checks finished, {$difftime} seconds, processed {$comps} completions, {$apireqs} API requests.");
 
         return $status;
     }

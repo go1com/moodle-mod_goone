@@ -22,6 +22,7 @@
  * @copyright Open LMS 2021
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Julian Tovar <julian.tovar@openlms.net>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 namespace mod_goone\settings;

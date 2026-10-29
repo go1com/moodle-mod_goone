@@ -17,10 +17,11 @@
 {{!
   GO1 Activity Module.
 
-  @package    mod_goone
-  @copyright  2019, eCreators PTY LTD
-  @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-  @author     Fouad Saikali <fouad@ecreators.com.au>
+  @package   mod_goone
+  @copyright 2019, eCreators PTY LTD
+  @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+  @author    Fouad Saikali <fouad@ecreators.com.au>
+  @author    Kirill Astashov <kirill.astashov@androgogic.com>
 }}
 
 <div class="container">
@@ -28,11 +29,7 @@
 	<script>
 		"use strict";
 
-		const ScormPackage_Value = {
-		"token": "{{token}}",
-		"version": "1.2",
-		"id": {{loid}}
-		};
+		const ScormPackage_Value = {{{scormpackage}}};
 	</script>
 
 	<script type="text/javascript" src="https://cdn.go1static.com/assets/scorm/service.js"></script>

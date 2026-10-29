@@ -36,15 +36,34 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
     </TABLE>
-        <TABLE NAME="mod_goone_webhook_logs" COMMENT="goone mode plugins webhook logs">
+    <TABLE NAME="goone_webhook_logs" COMMENT="goone mode plugins webhook logs">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="message_info" TYPE="text" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="message_info" TYPE="text" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The Moodle user that the row is about, if any."/>
       </FIELDS>
       <KEYS>
       <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="goone_usermap" COMMENT="User mapping">
+        <FIELDS>
+            <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+            <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+            <FIELD NAME="gooneuserid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+            <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        </FIELDS>
+        <KEYS>
+            <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        </KEYS>
+        <INDEXES>
+            <INDEX NAME="ix_userid" UNIQUE="true" FIELDS="userid"/>
+            <INDEX NAME="ix_gooneuserid" UNIQUE="true" FIELDS="gooneuserid"/>
+        </INDEXES>
     </TABLE>
   </TABLES>
 </XMLDB>

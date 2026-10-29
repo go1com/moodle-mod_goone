@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -63,11 +64,11 @@ class backup_goone_activity_task extends backup_activity_task {
 
         // Link to the list of goone.
         $search = "/(".$base."\/mod\/goone\/index.php\?id\=)([0-9]+)/";
-        $content = preg_replace($search, '$@gooneINDEX*$2@$', $content);
+        $content = preg_replace($search, '$@GOONEINDEX*$2@$', $content);
 
         // Link to goone view by moduleid.
         $search = "/(".$base."\/mod\/goone\/view.php\?id\=)([0-9]+)/";
-        $content = preg_replace($search, '$@gooneVIEWBYID*$2@$', $content);
+        $content = preg_replace($search, '$@GOONEVIEWBYID*$2@$', $content);
 
         return $content;
     }

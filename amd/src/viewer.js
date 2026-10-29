@@ -16,10 +16,11 @@
 /**
  * Javascript for view.php to dynamically fit content to window.
  *
- * @package   mod_goone
+ * @module    mod_goone/viewer
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 define(['jquery'], function($) {
@@ -28,7 +29,7 @@ define(['jquery'], function($) {
     viewer.urltogo = null;
 
     viewer.init = function() {
-        $(document).ready(function () {
+        $(document).ready(function() {
             var newheight = ($(window).height() - 50);
             if (newheight < 680 || isNaN(newheight)) {
                 newheight = 680;
@@ -36,7 +37,7 @@ define(['jquery'], function($) {
             $("#content").height(newheight);
         });
 
-        $(window).on('resize',function(){
+        $(window).on('resize', function() {
             var newheight = ($(window).height() - 50);
             if (newheight < 680 || isNaN(newheight)) {
                 newheight = 680;
@@ -46,8 +47,9 @@ define(['jquery'], function($) {
     };
 
     viewer.newwindow = function(urltogo) {
-        setTimeout(function(){
-            window.open(urltogo + '&win=1');}, 1500);
+        setTimeout(function() {
+            window.open(urltogo + '&win=1');
+        }, 1500);
     };
     return viewer;
 });

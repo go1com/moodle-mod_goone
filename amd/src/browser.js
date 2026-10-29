@@ -16,10 +16,11 @@
 /**
  * Javascript for browser.php functions.
  *
- * @package   mod_goone
+ * @module    mod_goone/browser
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 require.config({
     paths: {
@@ -27,21 +28,60 @@ require.config({
     }
 });
 define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notification', 'core/ajax',
- 'core/modal_factory', 'core/modal_events'],
-    function($, BsMultiselect, Templates, Str, Notification, Ajax, ModalFactory, ModalEvents) {
+ 'core/modal_save_cancel', 'core/modal_events'],
+    function($, BsMultiselect, Templates, Str, Notification, Ajax, ModalSaveCancel, ModalEvents) {
         var browser = {};
+
+/*
+ * The multiselect library writes its button for one Bootstrap version only.
+ * Version 2.0.0 writes data-bs-toggle, which Bootstrap 5 reads. Moodle 4.5 loads
+ * Bootstrap 4, which reads data-toggle and leaves such a button shut.
+ *
+ * The button below carries BOTH attributes and the button class of both versions.
+ * Each Bootstrap reads the attribute it knows and ignores the other, thus one
+ * library serves Moodle 4.5 and Moodle 5.0 and later. Remove nothing here without
+ * running tests/behat/content_browser_filters.feature on 4.5 AND on 5.3.
+ */
+// The library puts a Bootstrap class on the button to line up its words:
+// text-center by default, and text-start for 'left'. Both text-start and
+// text-left belong to ONE Bootstrap version only, and both carry !important,
+// thus neither can be corrected with a style rule. The option is switched off
+// with false, which adds no class at all, and the style rule in the template
+// lines the words up at the left in every version.
+var GOONE_BUTTON = '<button type="button"'
+    + ' class="multiselect dropdown-toggle custom-select form-select"'
+    + ' data-toggle="dropdown" data-bs-toggle="dropdown">'
+    + '<span class="multiselect-selected-text"></span></button>';
+
         browser.offSet = 0;
         browser.initial = 0;
-        Str.get_string('expand', 'core', browser.cleartext);
-        browser.init = function() {
-            $(document).ready(function () {
+        browser.contextid = 0;
+
+        /**
+         * Reads the selected values of a multiple select.
+         *
+         * jQuery gives null when the user selects nothing, and when the select has
+         * no options. The second case occurs when the GO1 API does not answer. A
+         * call to .map() on null stops the page with a JavaScript error.
+         *
+         * @param {String} selector The selector of the select element.
+         * @return {Array} The selected values, or an empty array.
+         */
+        browser.selected = function(selector) {
+            return $(selector).val() || [];
+        };
+        browser.init = function(contextid) {
+            browser.contextid = contextid;
+            // The multiselect filters need the text of their reset option, thus start when the string and the page are ready.
+            Promise.all([Str.getString('clear', 'core'), $.ready]).then(function(strings) {
+                browser.cleartext = strings[0];
                 $('#sort').change(function() {
                     browser.changeFilter();
                 });
-                $('#provider').multiselect({
+                $('#provider').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,
                     inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '15rem',
                     includeResetOption: true,
@@ -50,9 +90,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#tag').multiselect({inheritClass: true,
+                $('#tag').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '15rem',
                     includeResetOption: true,
@@ -61,9 +101,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#language').multiselect({inheritClass: true,
+                $('#language').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '15rem',
                     includeResetOption: true,
@@ -72,9 +112,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#type').multiselect({inheritClass: true,
+                $('#type').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '15rem',
                     includeResetOption: true,
@@ -83,25 +123,27 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('.multiselect-reset').on('click',function () {
+                $('.multiselect-reset').on('click', function() {
                         browser.changeFilter();
                 });
-                browser.loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),
-                    $("#keyword").val(),$("#sort").val(),browser.offSet);
-            });
+                var fixedTags = browser.selected("#tag");
+                browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
+                    browser.selected("#provider"),
+                    $("#keyword").val(), $("#sort").val(), browser.offSet);
+                return;
+            }).catch(Notification.exception);
 
-            $(document).on('click', '#lomodal', function() {
+            $(document).on('click', '.lomodal', function() {
                 var loname = $(this).data('name');
                 var loid = $(this).data('id');
 
-                   return ModalFactory.create({
+                   return ModalSaveCancel.create({
                         title: loname,
-                        type: ModalFactory.types.SAVE_CANCEL,
                         large: true
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         Ajax.call([{
                             methodname: 'mod_goone_get_modal',
-                            args: {loid: loid},
+                            args: {loid: loid, contextid: browser.contextid},
                             done: function(data) {
                                 modal.setBody(Templates.render('mod_goone/modal', JSON.parse(data.result)));
                             },
@@ -110,22 +152,26 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         modal.setSaveButtonText(Str.get_string('submit', 'core'));
                         modal.getRoot().on(ModalEvents.save, function() {
                             try {
-                                window.opener.$('#id_loid').val(loid);
-                                window.opener.$('#id_loname').val(loname);
+                                window.opener.document.getElementById('id_loid').value = loid;
+                                window.opener.document.getElementById('id_loname').value = loname;
+                            } catch (err) {
+                                // The opener window is not available, thus there is nothing to update.
                             }
-                            catch (err) {}
                             window.close();
                             return false;
                         });
                         modal.show();
-                    });
+                        return modal;
+                    }).catch(Notification.exception);
             });
             $("#load-more").click(function() {
                 browser.offSet = browser.offSet + 20;
-                browser.loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),
-                    $("#keyword").val(),$("#sort").val(),browser.offSet);
+                var fixedTags = browser.selected("#tag");
+                browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
+                    browser.selected("#provider"),
+                    $("#keyword").val(), $("#sort").val(), browser.offSet);
             });
-            $('#keyword').keypress(function (e) {
+            $('#keyword').keypress(function(e) {
                 if (e.which == 13) {
                     $('#keyword').submit();
                     browser.changeFilter();
@@ -140,8 +186,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             }
             browser.offSet = 0;
             $("#goone-browser-results").html("");
-            browser.loadResults($("#type").val(),$("#tag").val(),$("#language").val(),$("#provider").val(),
-                $("#keyword").val(),$("#sort").val(),browser.offSet);
+            var fixedTags = browser.selected("#tag");
+            browser.loadResults(browser.selected("#type"), fixedTags, browser.selected("#language"),
+                    browser.selected("#provider"),
+                $("#keyword").val(), $("#sort").val(), browser.offSet);
         };
 
         browser.loadResults = function(type, tag, language, provider, keyword, sort, offSet) {
@@ -149,7 +197,8 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             $("#spinny").show();
             Ajax.call([{
                 methodname: 'mod_goone_get_hits',
-                args: {type: type, tag: tag, language: language, provider: provider, keyword: keyword, sort: sort, offset: offSet},
+                args: {type: type, tag: tag, language: language, provider: provider, keyword: keyword, sort: sort,
+                    offset: offSet, contextid: browser.contextid},
                 done: function(data) {
                     $("#goone-browser-results").append(data.result);
                     $("#spinny").hide();
@@ -163,8 +212,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         $("#load-more-div").show();
                         $("#end-of-results").hide();
                     }
-                    if(type + '' != $("#type").val() + '' || tag + '' != $("#tag").val() + '' || language +
-                    '' != $("#language").val() + '' || provider + '' != $("#provider").val() + '') {
+                    var fixedTags = browser.selected("#tag");
+                    if (type + '' != browser.selected("#type") + '' || tag + '' != fixedTags + ''
+                        || language + '' != browser.selected("#language") + ''
+                        || provider + '' != browser.selected("#provider") + '') {
                             browser.changeFilter();
                     }
                 },

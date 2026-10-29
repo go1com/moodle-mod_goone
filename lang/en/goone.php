@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die;
@@ -30,6 +31,8 @@ $string['pluginadministration'] = 'GO1 admin';
 $string['modulename'] = 'GO1 content item';
 $string['modulenameplural'] = 'GO1';
 $string['modulename_help'] = 'Use GO1’s library of learning resources to help create your own custom training content, direct from your Moodle instance. </br>With GO1 content you have instant access to a growing library containing thousands of learning resources, from the best content providers around the world. Connecting Moodle and GO1 enables you to search the GO1 library for the right content for your training needs and easily add it to your chosen course for a simple course delivery experience. </br>GO1 has the world’s largest marketplace of training, offering you: </br><ul><li>a huge range of various types of learning resources including documents, interactive files, videos, full-length courses, and more</li><li>a comprehensive off-the-shelf library of professional development training covering areas of leadership, HR, and communications, as well as compliance training to meet your region\'s specific needs.</li></ul>';
+$string['crontask'] = 'Background processing for GO1 module';
+$string['cleanupwebhooklogstask'] = 'Delete old GO1 webhook log rows';
 $string['userpreferences'] = 'User preferences';
 $string['clientsecret'] = 'Client secret';
 $string['clientsecretdesc'] = 'GO1 Oauth client secret';
@@ -87,18 +90,30 @@ $string['overview'] = "Overview";
 $string['learning'] = "Learning";
 $string['description'] = 'Description';
 $string['lodownloaderror'] = 'Error downloading learning object, please check your GO1 credentials';
+$string['go1apierror'] = 'The GO1 API request failed. Please notify your site administrator.';
 $string['privacy:metadata:goone_completion:gooneid'] = 'The ID of the GO1 Course activity';
 $string['privacy:metadata:goone_completion:userid'] = 'The ID of a user who has interacted with a GO1 course';
 $string['privacy:metadata:goone_completion:location'] = 'The users last recorded position in a GO1 Course';
 $string['privacy:metadata:goone_completion:completed'] = 'The users completion status of a GO1 Course';
 $string['privacy:metadata:goone_completion:timemodified'] = 'The timestamp indicating when a user last recorded an interaction with the GO1 Course';
+$string['privacy:metadata:go1'] = 'The GO1 player gets data about the user, so that GO1 can record the progress of the user.';
+$string['privacy:metadata:go1:fullname'] = 'The full name of the user';
+$string['privacy:metadata:go1:username'] = 'The username of the user';
+$string['privacy:metadata:goone_usermap'] = 'The GO1 user that the plugin found for a Moodle user';
+$string['privacy:metadata:goone_usermap:gooneuserid'] = 'The ID of the GO1 user';
+$string['privacy:metadata:goone_usermap:timecreated'] = 'The time when the plugin found the GO1 user';
+$string['privacy:metadata:goone_usermap:userid'] = 'The ID of the Moodle user';
+$string['privacy:metadata:goone_webhook_logs'] = 'The log of the GO1 webhook events and of the GO1 user matches';
+$string['privacy:metadata:goone_webhook_logs:message_info'] = 'The message of the log row';
+$string['privacy:metadata:goone_webhook_logs:timecreated'] = 'The time of the log row';
+$string['privacy:metadata:goone_webhook_logs:userid'] = 'The ID of the Moodle user that the log row is about';
 $string['privacy:metadata:goone_completion'] = 'Information about a users progress and completion recrods for a GO1 Course';
 $string['partnerid'] = "Partner ID";
 $string['partneriddesc'] = "For use by GO1 partners only.";
 $string['partnersettingheading'] = "GO1 partner settings";
 $string['goone:addinstance'] = "Add or update a GO1 conent item";
 $string['goone:view'] = 'View GO1 module';
-$string['completiondetail:submit'] = 'Make a submission';
+$string['completiondetail:submit'] = 'Finish the learning object';
 // Bulk strings
 $string['pagetitle'] = "Go1 Content";
 $string['contenttype'] = "Content type";
@@ -132,19 +147,48 @@ $string['goone_api_secret'] = "Webhook Secret";
 $string['goone_api_secretdesc'] = "Secret created to handle the webhook api calls.";
 $string['logs_webhook'] = "Webhook logs";
 $string['usernotfound'] = "User not found";
+$string['useralreadymapped'] = 'GO1 user {$a->gooneuserid} matches Moodle user {$a->userid}, but that Moodle user is already mapped to GO1 user {$a->mappedgooneuserid}. No user was selected.';
+$string['useremailnotunique'] = 'More than one Moodle user has the email of GO1 user {$a}. No user was selected.';
 $string['signaturenotmatching'] = "Signature not matching";
 $string['signaturenotset'] = "Signature not found in request";
-$string['webhookcreated'] = "Client already have a webhook created!";
+$string['signaturenotconfig'] = "Signature not found in Moodle config";
+$string['webhookgo1apierror'] = 'The GO1 API did not return the enrolment. GO1 will send the event again.';
+$string['webhookgo1usererror'] = 'The GO1 user could not be matched to a Moodle user, because a request failed. GO1 will send the event again.';
+$string['webhooksuccess'] = 'Success. User: {$a->userid}, course: {$a->courseid}, cm {$a->cmid}, set {$a->result}';
+$string['webhookrequestaccepted'] = 'GO1 accepted the webhook request {$a}.';
+$string['webhookrequestfailed'] = 'GO1 did not accept the webhook request {$a}. The secret was not changed.';
+$string['webhookrepaired'] = 'The webhook of this site was repaired. It has a new secret, it is active, and it sends enrollment.complete events.';
+$string['webhookrepairerror'] = 'The webhook could not be repaired. The webhook log has the details. The secret was not changed.';
+$string['webhookinvaliddata'] = 'The webhook event has no enrolment ID or no learning object ID. The event was ignored.';
 $string['payloadheading'] = "Secret key used on webhook to sign the requests";
 $string['tokennotdefined'] = "Token not defined";
-$string['createwebhook'] = "Create webhook";
+$string['createwebhook'] = "Create or repair webhook";
+$string['createwebhookconfirmtitle'] = "Create or repair the GO1 webhook";
+$string['createwebhookconfirmbody'] = "This makes the GO1 webhook of this site, or repairs it. The webhook gets a new secret. GO1 sends the completion events to this site with the new secret. Do you want to continue?";
+$string['createwebhookconfirmgo'] = "Create or repair";
+$string['createwebhookrequesterror'] = "The request did not get an answer from this site. The webhook did not change.";
 $string['viewwebhooklogs'] = "View webhook logs";
 $string['sort'] = "Sort";
 $string['createitems'] = "Create activities";
 $string['webhookcurlerror'] = "Webhook creation request error";
-$string['webhooknewcreatedgood'] = "Webhook creted successfully";
+$string['webhooknewcreatedgood'] = "Webhook created successfully";
 $string['recordrequestednotfound'] = "Record requested not found";
 $string['activitynotfound'] = "Activity not found";
 $string['createitemsheading'] = "Create activities, bulk actions";
 $string['actionbuttonsheading'] = "Action buttons";
 $string['credentialssettingsheading'] = "Go1 API credentials";
+$string['othersettingsheading'] = 'Other settings';
+$string['resetcompletion'] = 'On course reset';
+$string['resetcompletiondesc'] = 'What to do with the GO1 progress of the learners when a teacher resets a course.
+
+This setting gives the value that the course reset form shows first. A teacher can change it for each reset.
+
+<b>Do not reset GO1 progress</b> keeps the record of each learner. Note that a reset still deletes the completion data of Moodle. The two records are then different: the activity shows as not complete, but the GO1 record still shows the learning object as finished. A learner who opens the activity again becomes complete at once, without looking at the content.
+
+<b>Reset GO1 progress</b> removes the GO1 record of each learner in that course. A learner must then finish the learning object again.';
+$string['webhooklogretention'] = 'Keep webhook log rows for';
+$string['webhooklogretentiondesc'] = 'A daily task deletes the rows of the webhook log that are older than this period. Set 0 to keep all rows.';
+$string['webhooklogtruncated'] = '[The request has {$a} characters. Only the start is kept.]';
+$string['resetcompletionkeep'] = 'Do not reset GO1 progress';
+$string['resetcompletionremove'] = 'Reset GO1 progress';
+$string['resetcompletionformlabel'] = 'Reset GO1 progress';

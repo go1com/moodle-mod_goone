@@ -20,15 +20,17 @@
  * @package   mod_goone
  * @copyright 2019 Fouad Saikali <fouad@ecreators.com.au>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'mod_goone';
-$plugin->version  = 2024042900;
-$plugin->release  = 'v3.0';
-$plugin->requires = 2022112810.04;
-$plugin->maturity = MATURITY_STABLE;
+$plugin->version  = 2026102801;
+$plugin->release  = 'v5.3-rc.1';
+$plugin->requires = 2024100700; // Require Moodle 4.5
+$plugin->supported = [405, 503];
+$plugin->maturity = MATURITY_RC;
 $plugin->dependencies = array(
     'mod_scorm' => ANY_VERSION,
 );

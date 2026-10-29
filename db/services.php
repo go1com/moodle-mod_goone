@@ -21,6 +21,7 @@
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 
 defined('MOODLE_INTERNAL') || die;
@@ -52,7 +53,7 @@ $functions = [
         'classpath'     => 'mod/goone/externallib.php',
         'description'   => 'Retreive hits from GO1 API',
         'type'          => 'read',
-        'capabilities'  => 'mod/goone:addinstance',
+        'capabilities'  => 'mod/goone:viewbulkcontent',
         'ajax'          => true,
         'loginrequired' => true,
     ],
@@ -62,7 +63,7 @@ $functions = [
         'classpath'     => 'mod/goone/externallib.php',
         'description'   => 'Retreive learning object overview from GO1 API',
         'type'          => 'read',
-        'capabilities'  => 'mod/goone:addinstance',
+        'capabilities'  => 'mod/goone:viewbulkcontent',
         'ajax'          => true,
         'loginrequired' => true,
     ],
@@ -72,7 +73,7 @@ $functions = [
         'classpath'     => 'mod/goone/externallib.php',
         'description'   => 'Retreive search form',
         'type'          => 'read',
-        'capabilities'  => 'mod/goone:addinstance',
+        'capabilities'  => 'mod/goone:viewbulkcontent',
         'ajax'          => true,
         'loginrequired' => true,
     ],
@@ -81,8 +82,8 @@ $functions = [
         'methodname'    => 'bulk_goone_process_course_per_item',
         'classpath'     => 'mod/goone/externallib.php',
         'description'   => 'Process course per item',
-        'type'          => 'read',
-        'capabilities'  => 'mod/goone:addinstance',
+        'type'          => 'write',
+        'capabilities'  => 'mod/goone:viewbulkcontent',
         'ajax'          => true,
         'loginrequired' => true,
     ],
@@ -91,8 +92,8 @@ $functions = [
         'methodname'    => 'bulk_goone_process_course_single_course',
         'classpath'     => 'mod/goone/externallib.php',
         'description'   => 'Process items as single course',
-        'type'          => 'read',
-        'capabilities'  => 'mod/goone:addinstance',
+        'type'          => 'write',
+        'capabilities'  => 'mod/goone:viewbulkcontent',
         'ajax'          => true,
         'loginrequired' => true,
     ],
@@ -101,8 +102,8 @@ $functions = [
         'methodname'    => 'bulk_goone_process_add_to_existing_course',
         'classpath'     => 'mod/goone/externallib.php',
         'description'   => 'Add items to existing course',
-        'type'          => 'read',
-        'capabilities'  => 'mod/goone:addinstance',
+        'type'          => 'write',
+        'capabilities'  => 'mod/goone:viewbulkcontent',
         'ajax'          => true,
         'loginrequired' => true,
     ],

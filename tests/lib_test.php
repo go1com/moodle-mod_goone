@@ -17,12 +17,18 @@
 /**
  * Unit tests for (some of) mod/goone/lib.php.
  *
- * @package    mod_goone
- * @category   test
- * @copyright  2020 eCreators
+ * @package   mod_goone
+ * @category  test
+ * @copyright 2020 eCreators
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
+
+namespace mod_goone;
+
+use advanced_testcase;
+use moodle_exception;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -31,16 +37,17 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
 /**
  * PHPUnit data generator testcase.
  *
- * @copyright  2020 eCreators
+ * @copyright 2020 eCreators
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author    Fouad Saikali <fouad@ecreators.com.au>
  */
-class mod_goone_lib_testcase extends advanced_testcase {
+class lib_test extends advanced_testcase {
 
     public function test_goone_supports() {
         $this->assertTrue(goone_supports(FEATURE_COMPLETION_TRACKS_VIEWS) == true);
         $this->assertTrue(goone_supports(FEATURE_COMPLETION_HAS_RULES) == true);
         $this->assertTrue(goone_supports(FEATURE_BACKUP_MOODLE2) == true);
+        $this->assertEquals(MOD_PURPOSE_CONTENT, goone_supports(FEATURE_MOD_PURPOSE));
     }
 
     public function test_goone_convert_hours_mins() {
@@ -63,6 +70,116 @@ class mod_goone_lib_testcase extends advanced_testcase {
         $completion = goone_set_completion($cm, $student->id, '', "completed");
         $this->assertTrue($completion);
 
+    }
+
+    public function test_goone_set_completion_saves_location_for_resume() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $goone = $this->getDataGenerator()->create_module('goone', ['course' => $course->id]);
+        $cm = get_coursemodule_from_id('goone', $goone->cmid, 0, false, MUST_EXIST);
+        $this->setUser($student);
+
+        goone_set_completion($cm, $student->id, 'page-3', 'inprogress');
+
+        $this->assertEquals('page-3', $DB->get_field('goone_completion', 'location',
+            ['gooneid' => $goone->id, 'userid' => $student->id]));
+        $sstate = goone_session_state($goone->id, $cm->id);
+        $this->assertEquals('page-3', $sstate->def->{6}['cmi.core.lesson_location']);
+        $this->assertEquals('resume', $sstate->def->{6}['cmi.core.entry']);
+    }
+
+    public function test_goone_get_moodle_user_matches_email_local_part_as_username() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user(['username' => 'jsmith', 'email' => 'other@example.com']);
+        // A valid token prevents a token request.
+        set_config('token_time', time(), 'mod_goone');
+        // The GO1 user. Only the local part of the email address matches a Moodle user.
+        \curl::mock_response(json_encode([
+            'email' => 'jsmith@example.org',
+            'first_name' => 'No',
+            'last_name' => 'Match',
+        ]));
+
+        $result = goone_get_moodle_user(555);
+
+        $this->assertNotFalse($result);
+        $this->assertEquals($user->id, $result->id);
+        $this->assertEquals($user->id, $DB->get_field('goone_usermap', 'userid', ['gooneuserid' => 555]));
+    }
+
+    public function test_goone_get_browse_context_unknown_mode_throws_invalidparameter() {
+        try {
+            goone_get_browse_context('unknown', 1);
+            $this->fail('An exception was expected.');
+        } catch (moodle_exception $e) {
+            $this->assertEquals('invalidparameter', $e->errorcode);
+            $this->assertEquals('debug', $e->module);
+        }
+    }
+
+    public function test_goone_download_scorm_failure_throws_lodownloaderror() {
+        $this->resetAfterTest();
+        // A mocked response is not written to the download file, thus the download is empty.
+        \curl::mock_response('');
+
+        try {
+            goone_download_scorm('9999');
+            $this->fail('An exception was expected.');
+        } catch (moodle_exception $e) {
+            $this->assertEquals('lodownloaderror', $e->errorcode);
+            $this->assertEquals('mod_goone', $e->module);
+        }
+
+        // The empty download is not a ZIP file. The file packer of Moodle thus
+        // writes a debugging message. Tell the test that this message is expected.
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * Data provider for test_mod_goone_api_payload_signature_valid().
+     *
+     * @return array[]
+     */
+    public static function payload_signature_provider(): array {
+        $request = '{"data":{"id":1}}';
+        // GO1 sends t as a Unix timestamp in milliseconds.
+        $now = time() * 1000;
+        $signed = function(string $secret, int $t) use ($request): string {
+            return "t=$t,v1=" . hash_hmac('sha256', $t . '.' . $request, $secret);
+        };
+        return [
+            'Correct signature' => [$request, $signed('secret', $now), 'secret', true],
+            'Incorrect signature' => [$request, $signed('other', $now), 'secret', false],
+            'Empty secret, header signed with the empty key' => [$request, $signed('', $now), '', false],
+            'Empty header' => [$request, '', 'secret', false],
+            'Header with one item' => [$request, "t=$now", 'secret', false],
+            'Header items without a value' => [$request, 'abc,def', 'secret', false],
+            'Timestamp 23 hours old' => [$request, $signed('secret', $now - 23 * HOURSECS * 1000), 'secret', true],
+            'Timestamp 25 hours old' => [$request, $signed('secret', $now - 25 * HOURSECS * 1000), 'secret', false],
+            'Timestamp 25 hours in the future' => [$request, $signed('secret', $now + 25 * HOURSECS * 1000), 'secret', false],
+            'Timestamp in seconds' => [$request, $signed('secret', time()), 'secret', false],
+            'Timestamp that is not a number' => [$request, "t=abc,v1=" . hash_hmac('sha256', 'abc.' . $request, 'secret'),
+                'secret', false],
+        ];
+    }
+
+    /**
+     * Test the signature check of the GO1 webhook request.
+     *
+     * @dataProvider payload_signature_provider
+     * @param string $request The request body.
+     * @param string $header The GO1-Signature header.
+     * @param string $secret The webhook secret.
+     * @param bool $expected Whether the signature is valid.
+     */
+    public function test_mod_goone_api_payload_signature_valid(string $request, string $header, string $secret,
+            bool $expected) {
+        $this->assertSame($expected, mod_goone_api_payload_signature_valid($request, $header, $secret));
     }
 
     public function test_goone_check_capabilities() {
@@ -148,12 +265,67 @@ class mod_goone_lib_testcase extends advanced_testcase {
     public function test_goone_get_coursemodule_info() {
         $this->resetAfterTest();
 
-        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1, 'completion' => COMPLETION_TRACKING_AUTOMATIC]);
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
         $goonegen = $this->getDataGenerator()->get_plugin_generator('mod_goone');
-        $goone = $goonegen->create_instance(['course' => $course->id]);
+        $goone = $goonegen->create_instance([
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionsubmit' => 1,
+        ]);
         $cm = get_coursemodule_from_id('goone', $goone->cmid, 0, true, MUST_EXIST);
         $info = goone_get_coursemodule_info($cm);
         $this->assertEquals($info->name, $goone->name);
-        $this->assertObjectHasAttribute( 'customdata', $info);
+        $this->assertEquals(1, $info->customdata['customcompletionrules']['completionsubmit']);
+    }
+
+    public function test_payload_request_marks_unviewed_activity_viewed_and_complete() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $goone = $this->getDataGenerator()->create_module('goone', [
+            'course' => $course->id,
+            'loid' => '12345',
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionview' => COMPLETION_VIEW_REQUIRED,
+            'completionsubmit' => 1,
+        ]);
+        // Map the GO1 user to the student, so that no GO1 user lookup occurs.
+        $DB->insert_record('goone_usermap', ['userid' => $student->id, 'gooneuserid' => 777, 'timecreated' => time()]);
+        // A valid token prevents a token request.
+        set_config('token_time', time(), 'mod_goone');
+        // The GO1 enrolment that the webhook refers to.
+        \curl::mock_response(json_encode(['id' => 1, 'pass' => 1, 'user_id' => 777, 'status' => 'completed']));
+
+        mod_goone_api_payload_process_post_request(['event_type' => 'enrollment.complete',
+            'data' => ['id' => 1, 'lo_id' => '12345']], '{}');
+
+        $this->assertTrue($DB->record_exists('course_modules_viewed',
+            ['coursemoduleid' => $goone->cmid, 'userid' => $student->id]));
+        $this->assertEquals(COMPLETION_COMPLETE, $DB->get_field('course_modules_completion', 'completionstate',
+            ['coursemoduleid' => $goone->cmid, 'userid' => $student->id]));
+    }
+
+    /**
+     * The bulk content browser gives the course the learning object ID as its idnumber. When the
+     * title of the learning object changes in GO1, the function must find the course by that ID,
+     * and must not make a second course.
+     */
+    public function test_bulk_mod_goone_create_course_finds_the_course_by_learning_object_id() {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $loinfo = ['id' => 4242, 'title' => 'First title', 'description' => 'Summary', 'image' => ''];
+
+        $created = bulk_mod_goone_create_course($loinfo);
+        $this->assertEquals('4242', $DB->get_field('course', 'idnumber', ['id' => $created->id]));
+
+        $loinfo['title'] = 'Second title';
+        $found = bulk_mod_goone_create_course($loinfo);
+
+        $this->assertEquals($created->id, $found->id);
+        $this->assertEquals(1, $DB->count_records('course', ['idnumber' => '4242']));
     }
 }

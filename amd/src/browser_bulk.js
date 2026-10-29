@@ -16,9 +16,9 @@
 /**
  * Javascript for browser.php functions.
  *
- * @package     mod_goone
- * @copyright   2022 Esteban Echavarria <esteban.echavarria@openlms.net>
- * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright 2022 Esteban Echavarria <esteban.echavarria@openlms.net>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @author    Kirill Astashov <kirill.astashov@androgogic.com>
  */
 require.config({
     paths: {
@@ -26,21 +26,59 @@ require.config({
     }
 });
 define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notification', 'core/ajax',
- 'core/modal_factory', 'core/modal_events'],
-    function($, BsMultiselect, Templates, Str, Notification, Ajax, ModalFactory, ModalEvents) {
+ 'core/modal', 'core/modal_cancel', 'core/modal_events'],
+    function($, BsMultiselect, Templates, Str, Notification, Ajax, Modal, ModalCancel, ModalEvents) {
         var browser = {};
+
+/*
+ * The multiselect library writes its button for one Bootstrap version only.
+ * Version 2.0.0 writes data-bs-toggle, which Bootstrap 5 reads. Moodle 4.5 loads
+ * Bootstrap 4, which reads data-toggle and leaves such a button shut.
+ *
+ * The button below carries BOTH attributes and the button class of both versions.
+ * Each Bootstrap reads the attribute it knows and ignores the other, thus one
+ * library serves Moodle 4.5 and Moodle 5.0 and later. Remove nothing here without
+ * running tests/behat/content_browser_filters.feature on 4.5 AND on 5.3.
+ */
+// The library puts a Bootstrap class on the button to line up its words:
+// text-center by default, and text-start for 'left'. Both text-start and
+// text-left belong to ONE Bootstrap version only, and both carry !important,
+// thus neither can be corrected with a style rule. The option is switched off
+// with false, which adds no class at all, and the style rule in the template
+// lines the words up at the left in every version.
+var GOONE_BUTTON = '<button type="button"'
+    + ' class="multiselect dropdown-toggle custom-select form-select"'
+    + ' data-toggle="dropdown" data-bs-toggle="dropdown">'
+    + '<span class="multiselect-selected-text"></span></button>';
+
         browser.offSet = 0;
         browser.initial = 0;
-        Str.get_string('expand', 'core', browser.cleartext);
+
+        /**
+         * Reads the selected values of a multiple select.
+         *
+         * jQuery gives null when the user selects nothing, and when the select has
+         * no options. The second case occurs when the GO1 API does not answer. The
+         * external functions declare these values as arrays, thus null makes the
+         * request fail.
+         *
+         * @param {String} selector The selector of the select element.
+         * @return {Array} The selected values, or an empty array.
+         */
+        browser.selected = function(selector) {
+            return $(selector).val() || [];
+        };
         browser.init = function() {
-            $(document).ready(function () {
+            // The multiselect filters need the text of their reset option, thus start when the string and the page are ready.
+            Promise.all([Str.getString('clear', 'core'), $.ready]).then(function(strings) {
+                browser.cleartext = strings[0];
                 $('#sort').change(function() {
                     browser.changeFilter();
                 });
-                $('#provider').multiselect({
+                $('#provider').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,
                     inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '11rem',
                     includeResetOption: true,
@@ -49,9 +87,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#topic').multiselect({inheritClass: true,
+                $('#topic').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '11rem',
                     includeResetOption: true,
@@ -60,9 +98,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#duration').multiselect({inheritClass: true,
+                $('#duration').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '11rem',
                     includeResetOption: true,
@@ -71,9 +109,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#language').multiselect({inheritClass: true,
+                $('#language').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '11rem',
                     includeResetOption: true,
@@ -82,9 +120,9 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('#type').multiselect({inheritClass: true,
+                $('#type').multiselect({templates: {button: GOONE_BUTTON}, buttonTextAlignment: false,inheritClass: true,
                     enableFiltering: true,
-                    enableCaseInsensitiveFiltering:true,
+                    enableCaseInsensitiveFiltering: true,
                     maxHeight: 350,
                     buttonWidth: '11rem',
                     includeResetOption: true,
@@ -93,20 +131,23 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                     onChange: function() {
                         browser.changeFilter();
                     }});
-                $('.multiselect-reset').on('click',function () {
+                $('.multiselect-reset').on('click', function() {
                         browser.changeFilter();
                 });
-                browser.loadResults($("#type").val(),$("#topic").val(),$("#language").val(),$("#provider").val(),
-                    $("#keyword").val(),$("#sort").val(), browser.offSet, false, $("#duration").val());
-            });
-            $(document).on('click', '#lomodal', function() {
+                browser.loadResults(browser.selected("#type"), browser.selected("#topic"),
+                    browser.selected("#language"), browser.selected("#provider"),
+                    $("#keyword").val(), $("#sort").val(), browser.offSet, false,
+                    browser.selected("#duration"));
+                return;
+            }).catch(Notification.exception);
+            $(document).on('click', '.lomodal', function() {
                 var loname = $(this).data('name');
                 var loid = $(this).data('id');
 
-                   return ModalFactory.create({
+                   return Modal.create({
                         title: loname,
                         large: true
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         Ajax.call([{
                             methodname: 'bulk_mod_goone_get_modal',
                             args: {loid: loid},
@@ -115,26 +156,30 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                             },
                             fail: Notification.exception
                         }]);
-                       // modal.setSaveButtonText(Str.get_string('submit', 'core'));
+                       // Modal.setSaveButtonText(Str.get_string('submit', 'core'));
                         modal.getRoot().on(ModalEvents.save, function() {
                             try {
                                 window.opener.$('#id_loid').val(loid);
                                 window.opener.$('#id_loname').val(loname);
+                            } catch (err) {
+                                // The opener window is not available, thus there is nothing to update.
                             }
-                            catch (err) {}
                             window.close();
                             return false;
                         });
                         modal.show();
+                        return;
                     });
             });
             $("#load-more").click(function() {
                 browser.offSet = browser.offSet + 20;
-                browser.loadResults($("#type").val(),$("#topic").val(),$("#language").val(),$("#provider").val(),
-                    $("#keyword").val(),$("#sort").val(),browser.offSet,true,$("#duration").val());
+                browser.loadResults(browser.selected("#type"), browser.selected("#topic"),
+                    browser.selected("#language"), browser.selected("#provider"),
+                    $("#keyword").val(), $("#sort").val(), browser.offSet, true,
+                    browser.selected("#duration"));
             });
-    
-            $('#keyword').keypress(function (e) {
+
+            $('#keyword').keypress(function(e) {
                 if (e.which == 13) {
                     $('#keyword').submit();
                     browser.changeFilter();
@@ -148,19 +193,22 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
             }
             browser.offSet = 0;
             $("#goone-browser-results").html("");
-            browser.loadResults($("#type").val(),$("#topic").val(),$("#language").val(),$("#provider").val(),
-                $("#keyword").val(),$("#sort").val(),browser.offSet,false,$("#duration").val());
+            browser.loadResults(browser.selected("#type"), browser.selected("#topic"),
+                browser.selected("#language"), browser.selected("#provider"),
+                $("#keyword").val(), $("#sort").val(), browser.offSet, false,
+                browser.selected("#duration"));
         };
         browser.loadResults = function(type, topic, language, provider, keyword, sort, offSet, loadmore, duration) {
             $("#spinny").show();
             Ajax.call([{
                 methodname: 'bulk_mod_goone_get_hits',
                 args: {
-                    type: type,topic: topic,language: language,provider: provider,keyword: keyword,sort: sort,offset: offSet,loadmore: loadmore,duration: duration
+                    type: type, topic: topic, language: language, provider: provider, keyword: keyword, sort: sort,
+                    offset: offSet, loadmore: loadmore, duration: duration
                 },
                 done: function(data) {
-                    if(loadmore === true) {
-                        $('#hits-table-results tr:last').after(data.result)
+                    if (loadmore === true) {
+                        $('#hits-table-results tr:last').after(data.result);
                     } else {
                         $("#goone-browser-results").append(data.result);
                     }
@@ -175,8 +223,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         $("#load-more-div").show();
                         $("#end-of-results").hide();
                     }
-                    if(type + '' != $("#type").val() + '' || topic + '' != $("#topic").val() + '' || language +
-                    '' != $("#language").val() + '' || provider + '' != $("#provider").val() + '') {
+                    if (type + '' != browser.selected("#type") + ''
+                        || topic + '' != browser.selected("#topic") + ''
+                        || language + '' != browser.selected("#language") + ''
+                        || provider + '' != browser.selected("#provider") + '') {
                             browser.changeFilter();
                     }
                 },
@@ -194,195 +244,212 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 });
 
                 if (elementseleted === false) {
-                    // message that no items selected
-                    return ModalFactory.create({
+                    // Message that no items selected
+                    return ModalCancel.create({
                         title: M.util.get_string('searchcoursemodaltitle', 'mod_goone'),
-                        type: ModalFactory.types.CANCEL,
                         large: false,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('noitemsselected', 'mod_goone'));
                         modal.show();
-                    }).then(function (modal){
+                        return modal;
+                    }).then(function(modal) {
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
                         });
+                        return;
                     });
                 }
 
-                if ( countitemsselected >= 200 ) {
+                if (countitemsselected >= 200) {
                     // Message limit of items reached
-                    return ModalFactory.create({
+                    return ModalCancel.create({
                         title: M.util.get_string('searchcoursemodaltitle', 'mod_goone'),
                         large: false,
-                        type: ModalFactory.types.CANCEL,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('toomanyitems', 'mod_goone'));
                         modal.show();
-                    }).then(function (modal){
+                        return modal;
+                    }).then(function(modal) {
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
                         });
+                        return;
                     });
                 }
 
-                data = {
+                var data = {
                     result: '{}',
                 };
-               return ModalFactory.create({
+               return Modal.create({
                     title: M.util.get_string('searchcoursemodaltitle', 'mod_goone'),
                     large: true,
-                }).done(function(modal) {
+                }).then(function(modal) {
                     modal.setBody(Templates.render('mod_goone/modalcoursesearch_bulk', JSON.parse(data.result)));
                     modal.setFooter('<div id="searchcoursefooter"></div>');
                     modal.show();
-                }).then(function (modal){
+                    return modal;
+                }).then(function(modal) {
                         // Handle hidden event.
                         modal.getRoot().on(ModalEvents.hidden, function() {
                         // Destroy when hidden.
                         modal.destroy();
                     });
+                    return;
                 });
         });
         $(document).on('click', '#createcourses', function() {
-            var selecteditems = '' ;
-            var selecteditemsids = '' ;
-            var dataobj = '' ;
-            var inputdata = '';     
+            var selecteditems = '';
+            var selecteditemsids = '';
+            var dataobj = '';
+            var inputdata = '';
             var countitemsselected = 0;
-            var elementseleted = false;
                 $('#goone-browser-results div.checkbox-cell input').each(function() {
                   if ($(this).is(':checked')) {
                      inputdata = $(this).data();
-                     selecteditems += '{"name": "'+inputdata.name+'"},';
-                     selecteditemsids += inputdata.id+',';
+                     selecteditems += '{"name": "' + inputdata.name + '"},';
+                     selecteditemsids += inputdata.id + ',';
                      countitemsselected++;
                   }
                 });
-                if ( countitemsselected == 0 ) {
+                if (countitemsselected == 0) {
                     // Message no items selected
-                    return ModalFactory.create({
+                    return ModalCancel.create({
                         title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
                         large: false,
-                        type: ModalFactory.types.CANCEL,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('noitemsselected', 'mod_goone'));
                         modal.show();
-                    }).then(function (modal){
+                        return modal;
+                    }).then(function(modal) {
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
                         });
-                    }); 
-                } else if (countitemsselected >= 200 ) {
+                        return;
+                    });
+                } else if (countitemsselected >= 200) {
                     // Message limit of items reached
-                    return ModalFactory.create({
+                    return ModalCancel.create({
                         title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
                         large: false,
-                        type: ModalFactory.types.CANCEL,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('toomanyitems', 'mod_goone'));
                         modal.show();
-                    }).then(function (modal){
+                        return modal;
+                    }).then(function(modal) {
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
                         });
-                    }); 
+                        return;
+                    });
                 }
                 selecteditems = selecteditems.replace(/,\s*$/, "");
                 selecteditemsids = selecteditemsids.replace(/,\s*$/, "");
-                if (selecteditems.length > 0 ) { 
-                    dataobj = '{"selected_items":['+selecteditems+'],"has_selected_items":true,"totalelements":'+countitemsselected+',"items_ids":"'+selecteditemsids+'"}';
+                if (selecteditems.length > 0) {
+                    dataobj = '{"selected_items":[' + selecteditems + '],"has_selected_items":true,"totalelements":' +
+                        countitemsselected + ',"items_ids":"' + selecteditemsids + '"}';
                 } else {
                     dataobj = '{"selected_items":[],"has_selected_items":true}';
                 }
-                data = {
+                var data = {
                     result: dataobj,
                 };
-               return ModalFactory.create({
+               return Modal.create({
                     title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
                     large: true,
-                }).done(function(modal) {
+                }).then(function(modal) {
                     modal.setBody(Templates.render('mod_goone/modalcreatecourses_bulk', JSON.parse(data.result)));
-                    modal.setFooter('<button class="btn btn-primary" id="save_create_selected_items">'+M.util.get_string('save', 'moodle')+'</button>');
+                    modal.setFooter('<button class="btn btn-primary" id="save_create_selected_items">' +
+                        M.util.get_string('save', 'moodle') + '</button>');
                     modal.show();
-                }).then(function (modal){
+                    return modal;
+                }).then(function(modal) {
                         // Handle hidden event.
                         modal.getRoot().on(ModalEvents.hidden, function() {
                         // Destroy when hidden.
                         modal.destroy();
                     });
+                    return;
                 });
         });
         // Create single course or multiple courses
         // 1 Course per item
        // 2 Single course all items
-        $(document).on('click', '#save_create_selected_items', function() {      
-           var option_selected =  $('.form-control-goone[name="createcourse"]:checked').val(); 
-           var selected_items_ids = $('#selected_items_ids').val();
-           var coursename =  $('#multi-item-course-name').val(); 
-           
-           $('.container.selected_items').html('<div id="spinny" class="preloader w-100 text-center" style="display:block;"><img src="'+M.cfg.wwwroot+'/mod/goone/pix/spinner.gif"></div><br/><span style="text-align: center;">'+M.util.get_string('processingitems', 'mod_goone')+'</span>');
-           if (option_selected == 1) {
+        $(document).on('click', '#save_create_selected_items', function() {
+           var optionselected = $('.form-control-goone[name="createcourse"]:checked').val();
+           var selecteditemsids = $('#selected_items_ids').val();
+           var coursename = $('#multi-item-course-name').val();
+
+           $('.container.selected_items').html('<div id="spinny" class="preloader w-100 text-center" style="display:block;">' +
+               '<img src="' + M.cfg.wwwroot + '/mod/goone/pix/spinner.gif"></div><br/><span style="text-align: center;">' +
+               M.util.get_string('processingitems', 'mod_goone') + '</span>');
+           if (optionselected == 1) {
                 // 1 Per item
                 Ajax.call([{
                     methodname: 'bulk_mod_goone_process_course_per_item',
-                    args: {items: selected_items_ids},
+                    args: {items: selecteditemsids},
                     done: function(data) {
                         $('.container.selected_items').html(data.result);
                     },
                     fail: Notification.exception
                 }]);
-           } else if (option_selected == 2) {
+           } else if (optionselected == 2) {
                 // 2 Single course all items
-                if ( coursename == "") {
-                    // message that no course name
-                    return ModalFactory.create({
+                if (coursename == "") {
+                    // Message that no course name
+                    ModalCancel.create({
                         title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
-                        type: ModalFactory.types.CANCEL,
                         large: false,
-                    }).done(function(modal) {
+                    }).then(function(modal) {
                         modal.setBody(M.util.get_string('coursenameempty', 'mod_goone'));
                         modal.show();
-                    }).then(function (modal){
+                        return modal;
+                    }).then(function(modal) {
                             modal.getRoot().on(ModalEvents.hidden, function() {
                             modal.destroy();
                         });
-                    });
+                        return;
+                    }).catch(Notification.exception);
+                    return;
                 }
 
                 Ajax.call([{
                     methodname: 'bulk_mod_goone_process_course_single_course',
-                    args: {items: selected_items_ids, coursename:coursename},
+                    args: {items: selecteditemsids, coursename: coursename},
                     done: function(data) {
                         $('.container.selected_items').html(data.result);
                     },
                     fail: Notification.exception
-                }]); 
+                }]);
            }
         });
-        
+
         $(document).on('click', '.form-control-goone[name="createcourse"]', function() {
-            if ($(this).val() == 2 ) {
-                $(this).parent().append('<div id="multi-item-course-name-div"><br/><label>'+M.util.get_string('coursename', 'mod_goone')+'</label><br><input type="text" name="multi-item-course-name" id="multi-item-course-name"></div>');
+            if ($(this).val() == 2) {
+                $(this).parent().append('<div id="multi-item-course-name-div"><br/><label>' +
+                    M.util.get_string('coursename', 'mod_goone') + '</label><br>' +
+                    '<input type="text" name="multi-item-course-name" id="multi-item-course-name"></div>');
             } else {
                 $("#multi-item-course-name").remove();
             }
         });
-        // Add activity or activities 
+        // Add activity or activities
         $(document).on('click', '#save_adding_to_existing_course', function() {
             var selecteditemsids = '';
             $('#goone-browser-results div.checkbox-cell input').each(function() {
               if ($(this).is(':checked')) {
-                 inputdata = $(this).data();
-                 selecteditemsids += inputdata.id+',';
+                 var inputdata = $(this).data();
+                 selecteditemsids += inputdata.id + ',';
               }
-            });   
-           var course_section =   $(".list-group-flush input[type='radio']:checked").val();
+            });
+           var coursesection = $(".list-group-flush input[type='radio']:checked").val();
            selecteditemsids = selecteditemsids.replace(/,\s*$/, "");
-           if (course_section !== '') {
-                $('#resultcoursesearch').html('<div id="spinny" class="preloader w-100 text-center" style="display:block;"><img src="'+M.cfg.wwwroot+'/mod/goone/pix/spinner.gif"></div><br/><span style="text-align: center;">'+M.util.get_string('processingitems', 'mod_goone')+'</span>');
+           if (coursesection !== '' && typeof (coursesection) !== 'undefined') {
+                $('#resultcoursesearch').html('<div id="spinny" class="preloader w-100 text-center" style="display:block;">' +
+                    '<img src="' + M.cfg.wwwroot + '/mod/goone/pix/spinner.gif"></div><br/><span style="text-align: center;">' +
+                    M.util.get_string('processingitems', 'mod_goone') + '</span>');
                 Ajax.call([{
                     methodname: 'bulk_mod_goone_process_add_to_existing_course',
-                    args: {course_section: course_section, selecteditemsids:selecteditemsids},
+                    args: {'course_section': coursesection, selecteditemsids: selecteditemsids},
                     done: function(data) {
                         $('#resultcoursesearch').html(data.result);
                     },
@@ -390,23 +457,24 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                 }]);
            } else {
                 // Message that no topic selected
-                return ModalFactory.create({
+                ModalCancel.create({
                     title: M.util.get_string('createcoursemodaltitle', 'mod_goone'),
                     large: false,
-                    type: ModalFactory.types.CANCEL,
-                }).done(function(modal) {
+                }).then(function(modal) {
                     modal.setBody(M.util.get_string('notopicselected', 'mod_goone'));
                     modal.show();
-                }).then(function (modal){
+                    return modal;
+                }).then(function(modal) {
                         modal.getRoot().on(ModalEvents.hidden, function() {
                         modal.destroy();
                     });
-                });
+                    return;
+                }).catch(Notification.exception);
            }
         });
         $(document).on('click', '#coursesearchbutton', function() {
             var searchstring = $('#coursesearchinput').val();
-            if(searchstring.length >= 3){
+            if (searchstring.length >= 3) {
                 Ajax.call([{
                     methodname: 'bulk_mod_goone_get_course_search_result',
                     args: {search: searchstring},
@@ -414,9 +482,10 @@ define(['jquery', 'BsMultiselect', 'core/templates', 'core/str', 'core/notificat
                         Templates.render('mod_goone/searchcourseresult_bulk', JSON.parse(data.result)).then(function(html) {
                             $('#resultcoursesearch').replaceWith(html);
                             return;
-                        }); 
+                        }).catch(Notification.exception);
                         var savestring = M.util.get_string('save', 'moodle');
-                        $('#searchcoursefooter').html('<button class="btn btn-primary" id="save_adding_to_existing_course">'+savestring+'</button>');
+                        $('#searchcoursefooter').html('<button class="btn btn-primary" id="save_adding_to_existing_course">' +
+                            savestring + '</button>');
                     },
                     fail: Notification.exception
                 }]);
