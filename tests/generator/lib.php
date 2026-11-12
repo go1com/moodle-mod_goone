@@ -39,11 +39,11 @@ class mod_goone_generator extends testing_module_generator {
     /**
      * Creates a mod_goone instance
      *
-     * @param array $record
-     * @param array $options
-     * @return StdClass
+     * @param array|stdClass|null $record The fields of the instance. The function adds defaults for the missing fields.
+     * @param array|null $options The options for the course module.
+     * @return stdClass The instance, with the course module ID in cmid.
      */
-    public function create_instance($record = null, array $options = null) {
+    public function create_instance($record = null, ?array $options = null) {
         $record = (object)(array)$record;
 
         $defaultsettings = array(

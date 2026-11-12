@@ -187,6 +187,7 @@ class reset_test extends advanced_testcase {
      * @param int $expected The wanted default of the form option.
      * @dataProvider setting_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('setting_provider')]
     public function test_the_form_default_follows_the_setting(string $setting, int $expected): void {
         set_config('resetcompletion', $setting, 'mod_goone');
 

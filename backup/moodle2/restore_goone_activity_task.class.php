@@ -54,6 +54,8 @@ class restore_goone_activity_task extends restore_activity_task {
     /**
      * Define the contents in the activity that must be
      * processed by the link decoder.
+     *
+     * @return restore_decode_content[]
      */
     public static function define_decode_contents() {
         $contents = array();
@@ -64,6 +66,8 @@ class restore_goone_activity_task extends restore_activity_task {
     /**
      * Define the decoding rules for links belonging
      * to the activity to be executed by the link decoder.
+     *
+     * @return restore_decode_rule[]
      */
     public static function define_decode_rules() {
         $rules = array();
@@ -74,6 +78,8 @@ class restore_goone_activity_task extends restore_activity_task {
 
     /**
      * Define the restore log rules that will be applied.
+     *
+     * @return restore_log_rule[] No rules.
      */
     public static function define_restore_log_rules() {
         $rules = array();
@@ -81,7 +87,10 @@ class restore_goone_activity_task extends restore_activity_task {
     }
 
     /**
-     * Define the restore log rules that will be applied.
+     * Define the restore log rules that will be applied
+     * by the restore_logs_processor when restoring course logs.
+     *
+     * @return restore_log_rule[] No rules.
      */
     public static function define_restore_log_rules_for_course() {
         $rules = array();

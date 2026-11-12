@@ -76,6 +76,7 @@ class browser_template_test extends advanced_testcase {
      * @param string $template The template name.
      * @dataProvider filter_template_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('filter_template_provider')]
     public function test_filter_form_has_the_scope_class(string $template): void {
         $this->resetAfterTest();
         $output = $this->render($template);
@@ -93,6 +94,7 @@ class browser_template_test extends advanced_testcase {
      * @param string $template The template name.
      * @dataProvider filter_template_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('filter_template_provider')]
     public function test_form_row_is_a_flex_row(string $template): void {
         $this->resetAfterTest();
         $output = $this->render($template);
@@ -115,6 +117,7 @@ class browser_template_test extends advanced_testcase {
      * @param string $template The template name.
      * @dataProvider filter_template_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('filter_template_provider')]
     public function test_filter_label_takes_a_full_line(string $template): void {
         $this->resetAfterTest();
         $output = $this->render($template);
@@ -151,6 +154,7 @@ class browser_template_test extends advanced_testcase {
      * @param string $template The template file name.
      * @dataProvider bootstrap_attribute_template_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('bootstrap_attribute_template_provider')]
     public function test_bootstrap_4_attributes_have_a_bootstrap_5_twin(string $template): void {
         global $CFG;
         $source = (string)file_get_contents($CFG->dirroot . '/mod/goone/templates/' . $template);
@@ -172,6 +176,7 @@ class browser_template_test extends advanced_testcase {
      * @param string $template The template name.
      * @dataProvider filter_template_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('filter_template_provider')]
     public function test_badge_keeps_the_parent_colour(string $template): void {
         $this->resetAfterTest();
         $output = $this->render($template);

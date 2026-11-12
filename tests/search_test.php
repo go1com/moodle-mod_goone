@@ -37,6 +37,8 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
  * @covers ::goone_get_hits
  * @covers ::bulk_mod_goone_get_hits
  */
+#[\PHPUnit\Framework\Attributes\CoversFunction('goone_get_hits')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('bulk_mod_goone_get_hits')]
 final class search_test extends advanced_testcase {
 
     protected function setUp(): void {
@@ -70,6 +72,7 @@ final class search_test extends advanced_testcase {
      * @dataProvider bad_answer_provider
      * @param string $answer The body that GO1 gives back.
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('bad_answer_provider')]
     public function test_browser_says_the_request_failed(string $answer): void {
         \curl::mock_response($answer);
 
@@ -83,11 +86,82 @@ final class search_test extends advanced_testcase {
      * @dataProvider bad_answer_provider
      * @param string $answer The body that GO1 gives back.
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('bad_answer_provider')]
     public function test_bulk_browser_says_the_request_failed(string $answer): void {
         \curl::mock_response($answer);
 
         $this->expectException(\moodle_exception::class);
         bulk_mod_goone_get_hits([], [], [], [], 'anything', 'relevance', 0, false, []);
+    }
+
+    /**
+     * GO1 can send a hit without the optional fields. Both content browsers must show it
+     * without a PHP warning.
+     */
+    public function test_both_browsers_show_a_hit_without_optional_fields(): void {
+        $answer = json_encode(['total' => 1, 'hits' => [['id' => 1, 'subscription' => ['id' => 2]]]]);
+
+        \curl::mock_response($answer);
+        $this->assertIsString(goone_get_hits([], [], [], [], '', 'relevance', 0));
+
+        \curl::mock_response($answer);
+        $this->assertIsString(bulk_mod_goone_get_hits([], [], [], [], '', 'relevance', 0, false, []));
+    }
+
+    /**
+     * The details of a learning object need no PHP warning when GO1 gives an answer that is
+     * not JSON.
+     */
+    public function test_both_modals_accept_an_answer_that_is_not_json(): void {
+        \curl::mock_response('<html>a gateway said no</html>');
+        $this->assertSame('{"has_items":false}', goone_modal_overview(1));
+
+        \curl::mock_response('<html>a gateway said no</html>');
+        $this->assertSame('{"has_items":false}', bulk_mod_goone_modal_overview(1));
+    }
+
+    /**
+     * The facets for the filters need no PHP warning when GO1 gives an answer that is not
+     * usable. An answer that is not JSON gives null. JSON without language facets is kept.
+     */
+    public function test_facets_accept_an_answer_that_is_not_usable(): void {
+        \curl::mock_response('<html>a gateway said no</html>');
+        $this->assertNull(goone_get_facets());
+
+        \curl::mock_response('{"facets":{"tag":{"buckets":[]}}}');
+        $this->assertSame(['facets' => ['tag' => ['buckets' => []]]], goone_get_facets());
+    }
+
+    /**
+     * Each duration filter of the bulk content browser must work without a PHP warning.
+     * The filter "60 min" has a minimum and no maximum.
+     */
+    public function test_bulk_browser_accepts_each_duration(): void {
+        foreach (['1', '2', '3', '4'] as $duration) {
+            \curl::mock_response('{"total":0,"hits":[]}');
+
+            $this->assertIsString(bulk_mod_goone_get_hits([], [], [], [], '', 'relevance', 0, false, [$duration]));
+        }
+    }
+
+    /**
+     * GO1 can send a hit without a language. The bulk content browser must show
+     * "Unknown language", and PHP 8.1 and later must not show a deprecation.
+     */
+    public function test_bulk_browser_shows_a_hit_without_language(): void {
+        \curl::mock_response(json_encode(['total' => 1, 'hits' => [[
+            'id' => 1,
+            'title' => 'Title',
+            'description' => 'Description',
+            'provider' => ['name' => 'Provider'],
+            'pricing' => ['price' => 0],
+            'image' => 'https://example.com/image.png',
+            'language' => null,
+        ]]]));
+
+        $html = bulk_mod_goone_get_hits([], [], [], [], '', 'relevance', 0, false, []);
+
+        $this->assertStringContainsString(get_string('unknownlanguage', 'mod_goone'), $html);
     }
 
     /**
@@ -118,6 +192,7 @@ final class search_test extends advanced_testcase {
      * @param string $value The value that a user chooses.
      * @param string $expected The form that the address must hold.
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('unsafe_value_provider')]
     public function test_a_filter_value_is_made_safe(string $value, string $expected): void {
         $this->assertSame($expected, rawurlencode($value));
         $this->assertStringNotContainsString(' ', rawurlencode($value));

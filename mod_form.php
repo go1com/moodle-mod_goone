@@ -32,7 +32,7 @@ require_once($CFG->dirroot.'/course/moodleform_mod.php');
 require_once($CFG->dirroot.'/mod/goone/lib.php');
 
 /**
- * Goone settings form.
+ * The form to add or update a GO1 activity.
  *
  * @package   mod_goone
  * @copyright 2019, eCreators PTY LTD
@@ -99,8 +99,8 @@ class mod_goone_mod_form extends moodleform_mod {
     /**
      * Determines if completion is enabled for this module.
      *
-     * @param array $data
-     * @return bool
+     * @param array $data The submitted data of the form.
+     * @return bool True when the completion rule of the learning object is selected.
      */
     public function completion_rule_enabled($data) {
         $suffix = $this->get_suffix();
