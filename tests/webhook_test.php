@@ -42,7 +42,12 @@ require_once($CFG->libdir . '/completionlib.php');
  * The GO1 API is replaced with curl::mock_response(), so no test sends a request to GO1.
  *
  * @covers ::mod_goone_api_payload_process_post_request
+ * @covers ::mod_goone_webhook_log_excerpt
+ * @covers ::mod_goone_view_api_payload_logs
  */
+#[\PHPUnit\Framework\Attributes\CoversFunction('mod_goone_api_payload_process_post_request')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('mod_goone_webhook_log_excerpt')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('mod_goone_view_api_payload_logs')]
 final class webhook_test extends advanced_testcase {
 
     /** @var \stdClass */
@@ -74,6 +79,10 @@ final class webhook_test extends advanced_testcase {
 
     /**
      * Return a GO1 webhook event.
+     *
+     * @param string $type The event type.
+     * @param array $data The event data. It replaces the default data with the same keys.
+     * @return array The event.
      */
     private static function event(string $type = 'enrollment.complete', array $data = []): array {
         return [
@@ -91,6 +100,9 @@ final class webhook_test extends advanced_testcase {
 
     /**
      * Queue the GO1 response for the enrolment lookup.
+     *
+     * @param array $fields The enrolment fields. They replace the default fields with the same keys.
+     * @return void
      */
     private static function mock_enrolment(array $fields = []): void {
         \curl::mock_response(json_encode($fields + ['id' => 101916887, 'lo_id' => 741712, 'user_id' => 777,
@@ -99,12 +111,20 @@ final class webhook_test extends advanced_testcase {
 
     /**
      * Process the event, and return the HTTP status code of the response to GO1.
+     *
+     * @param array $event The event.
+     * @return int The HTTP status code.
      */
     private function process(array $event): int {
         $json = json_encode($event);
         return mod_goone_api_payload_process_post_request(json_decode($json, true), $json);
     }
 
+    /**
+     * Return the GO1 completion state of the student in the activity.
+     *
+     * @return int|null The value of goone_completion.completed, or null when the student has no row.
+     */
     private function go1_completed(): ?int {
         global $DB;
         $completed = $DB->get_field('goone_completion', 'completed',
@@ -113,7 +133,9 @@ final class webhook_test extends advanced_testcase {
     }
 
     /**
-     * Return the number of queued GO1 responses that no request has used.
+     * Return the number of queued GO1 responses that no request has used, and remove them.
+     *
+     * @return int The number of unused responses.
      */
     private static function unused_mock_responses(): int {
         $prop = new \ReflectionProperty(\curl::class, 'mockresponses');
@@ -138,10 +160,13 @@ final class webhook_test extends advanced_testcase {
     }
 
     /**
+     * An event that is not enrollment.complete changes nothing and writes no log row.
+     *
      * @dataProvider other_event_provider
      * @param string $type The event type.
      * @param array $data The event data.
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('other_event_provider')]
     public function test_other_event_type_is_ignored(string $type, array $data): void {
         global $DB;
         // A completed enrolment, so that only the event type can stop the processing.
@@ -171,9 +196,12 @@ final class webhook_test extends advanced_testcase {
     }
 
     /**
+     * An event without the enrolment ID or the learning object ID writes a log row and changes nothing.
+     *
      * @dataProvider incomplete_data_provider
      * @param array $data The event data.
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('incomplete_data_provider')]
     public function test_event_without_ids_is_logged_and_ignored(array $data): void {
         global $DB;
         self::mock_enrolment();
@@ -235,16 +263,10 @@ final class webhook_test extends advanced_testcase {
             array_map(fn($m) => strtok($m, "\n"), array_values($DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1'))));
     }
 
-    /**
-     * @covers ::mod_goone_webhook_log_excerpt
-     */
     public function test_log_excerpt_keeps_short_request(): void {
         $this->assertSame('{"short":"body"}', mod_goone_webhook_log_excerpt('{"short":"body"}'));
     }
 
-    /**
-     * @covers ::mod_goone_webhook_log_excerpt
-     */
     public function test_log_excerpt_keeps_only_the_start_of_long_request(): void {
         // Multibyte characters, so that a cut by bytes would break a character.
         $request = str_repeat('é', 2000);
@@ -254,9 +276,6 @@ final class webhook_test extends advanced_testcase {
         $this->assertSame(str_repeat('é', 1024) . "\n" . get_string('webhooklogtruncated', 'mod_goone', 2000), $excerpt);
     }
 
-    /**
-     * @covers ::mod_goone_view_api_payload_logs
-     */
     public function test_log_page_shows_one_page_of_rows(): void {
         global $DB;
         for ($i = 1; $i <= 101; $i++) {

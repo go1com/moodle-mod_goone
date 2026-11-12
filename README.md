@@ -12,6 +12,7 @@ This plugin allows Go1 content to be accessed directly in a Moodle instance.
 
 - A Moodle or Moodle derived LMS (for example Open LMS).
 - Compatible Moodle versions: 4.5 to 5.3.
+- PHP 8.1 to 8.4.
 
 ## How to install
 
@@ -96,7 +97,7 @@ This flag is set as an array:
    - When a course creator adds an activity and selects a Go1 learning object,
    fill in the activity name automatically.
    - Improve the modal windows of the bulk content browser. The buttons and
-     the messages are not clear.
+    the messages are not clear.
    - Update the plugin to version 3 of the Go1 API.
    - Add a plugin setting for the course category of the courses that the bulk
    content browser creates. At the moment, an administrator selects this

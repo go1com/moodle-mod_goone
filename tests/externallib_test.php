@@ -89,6 +89,7 @@ class externallib_test extends advanced_testcase {
      * @param string $name The name of the external function.
      * @dataProvider external_function_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('external_function_provider')]
     public function test_parameters_description(string $name): void {
         $method = $name . '_parameters';
         $this->assertTrue(method_exists('mod_goone_external', $method),
@@ -105,6 +106,7 @@ class externallib_test extends advanced_testcase {
      * @param string $name The name of the external function.
      * @dataProvider external_function_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('external_function_provider')]
     public function test_returns_description(string $name): void {
         $method = $name . '_returns';
         $this->assertTrue(method_exists('mod_goone_external', $method),

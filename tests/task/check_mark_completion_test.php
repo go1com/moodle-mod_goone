@@ -43,6 +43,7 @@ require_once($CFG->libdir . '/completionlib.php');
  *
  * @covers \mod_goone\task\check_mark_completion
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_goone\task\check_mark_completion::class)]
 final class check_mark_completion_test extends advanced_testcase {
 
     /** @var \stdClass */
@@ -61,6 +62,9 @@ final class check_mark_completion_test extends advanced_testcase {
 
     /**
      * Make a GO1 activity that the learner completes when the learning object is finished.
+     *
+     * @param string $loid The ID of the GO1 learning object.
+     * @return \stdClass The instance, with the course module ID in cmid.
      */
     private function make_activity(string $loid): \stdClass {
         return $this->getDataGenerator()->create_module('goone', [
@@ -73,6 +77,10 @@ final class check_mark_completion_test extends advanced_testcase {
 
     /**
      * Make an enrolled learner, mapped to a GO1 user.
+     *
+     * @param int $gooneuserid The ID of the GO1 user.
+     * @param string $email The email of the learner.
+     * @return \stdClass The user.
      */
     private function make_learner(int $gooneuserid, string $email): \stdClass {
         global $DB;
@@ -83,6 +91,9 @@ final class check_mark_completion_test extends advanced_testcase {
 
     /**
      * Queue GO1 API responses in the order that the task requests them.
+     *
+     * @param array ...$responses The responses. Each one is encoded as JSON.
+     * @return void
      */
     private static function mock_api(array ...$responses): void {
         foreach (array_reverse($responses) as $response) {
@@ -91,7 +102,9 @@ final class check_mark_completion_test extends advanced_testcase {
     }
 
     /**
-     * Run the task, and return its status.
+     * Run the task, and return its status. The output of the task goes to $this->output.
+     *
+     * @return bool The status that the task returns.
      */
     private function run_task(): bool {
         ob_start();
@@ -100,6 +113,13 @@ final class check_mark_completion_test extends advanced_testcase {
         return $status;
     }
 
+    /**
+     * Return the Moodle completion state of a user in an activity.
+     *
+     * @param \stdClass $goone The instance, with the course module ID in cmid.
+     * @param int $userid The ID of the user.
+     * @return int|null The completion state, or null when the user has no completion row.
+     */
     private function state(\stdClass $goone, int $userid): ?int {
         global $DB;
         $state = $DB->get_field('course_modules_completion', 'completionstate',

@@ -37,6 +37,8 @@ class cleanup_webhook_logs extends \core\task\scheduled_task {
 
     /**
      * Delete the log rows that are older than the period of the webhooklogretention setting.
+     *
+     * @return void
      */
     public function execute() {
         global $DB;

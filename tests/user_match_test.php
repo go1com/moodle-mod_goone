@@ -41,6 +41,7 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
  *
  * @covers ::goone_get_moodle_user
  */
+#[\PHPUnit\Framework\Attributes\CoversFunction('goone_get_moodle_user')]
 final class user_match_test extends advanced_testcase {
 
     protected function setUp(): void {
@@ -52,12 +53,24 @@ final class user_match_test extends advanced_testcase {
 
     /**
      * Queue the GO1 response for the user lookup.
+     *
+     * @param int $id The ID of the GO1 user.
+     * @param string $email The email of the GO1 user.
+     * @param string $firstname The first name of the GO1 user.
+     * @param string $lastname The last name of the GO1 user.
+     * @return void
      */
     private static function mock_go1_user(int $id, string $email, string $firstname, string $lastname): void {
         \curl::mock_response(json_encode(['id' => $id, 'email' => $email, 'first_name' => $firstname,
             'last_name' => $lastname]));
     }
 
+    /**
+     * Gives the Moodle user that the GO1 user is mapped to.
+     *
+     * @param int $gooneuserid The ID of the GO1 user.
+     * @return int|null The ID of the Moodle user, or null when the GO1 user has no map.
+     */
     private static function mapped_userid(int $gooneuserid): ?int {
         global $DB;
         $userid = $DB->get_field('goone_usermap', 'userid', ['gooneuserid' => $gooneuserid]);

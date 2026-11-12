@@ -38,9 +38,9 @@ require_once($CFG->dirroot.'/course/modlib.php');
  * will create a new instance and return the id number
  * of the new instance.
  *
- * @param object $data
- * @param mod_page_mod_form $mform
- * @return int
+ * @param stdClass $data The data from the form.
+ * @param mod_goone_mod_form|null $mform The form.
+ * @return int The ID of the new instance.
  */
 function goone_add_instance($data, $mform = null) {
     global $CFG, $DB;
@@ -61,8 +61,10 @@ function goone_add_instance($data, $mform = null) {
 /**
  * Downloads SCORM Zip file from GO1 API and extracts
  * token parameter.
- * @param object $loid
- * @return string
+ *
+ * @param string $loid The ID of the GO1 learning object.
+ * @return string The token.
+ * @throws moodle_exception When the download has no token.
  */
 function goone_download_scorm($loid) {
     global $CFG;
@@ -100,15 +102,13 @@ function goone_download_scorm($loid) {
 }
 
 /**
- * Add a get_coursemodule_info function in case any goone type wants to add 'extra' information
- * for the course (see resource).
+ * Gives the information about the activity that Moodle keeps in the course cache.
  *
- * Given a course_module object, this function returns any "extra" information that may be needed
- * when printing this activity in a course listing.  See get_array_of_activities() in course/lib.php.
+ * The information holds the name, the description when the course page shows it, and the
+ * custom completion rules. See get_array_of_activities() in course/lib.php.
  *
  * @param stdClass $coursemodule The coursemodule object (record).
- * @return cached_cm_info An object on information that the courses
- *                        will know about (most noticeably, an icon).
+ * @return cached_cm_info|false The information, or false when the instance does not exist.
  */
 function goone_get_coursemodule_info($coursemodule) {
     global $DB;
@@ -136,11 +136,12 @@ function goone_get_coursemodule_info($coursemodule) {
 }
 /**
  * Extracts token parameter from GO1 SCORM Zip.
- * @param string $loid
- * @param string $tempdir
- * @param string $filename
- * @param string $filepath
- * @return object
+ *
+ * @param string $loid The ID of the GO1 learning object.
+ * @param string $tempdir The temporary directory, with a slash at the end.
+ * @param string $filename The name of the ZIP file in the goone temporary directory.
+ * @param string|null $filepath The full path of the ZIP file. Null means the file in the goone temporary directory.
+ * @return string|false The token, or false when the package has no token.
  */
 function goone_extract_scorm_token($loid, $tempdir, $filename, $filepath = null ) {
     global $CFG;
@@ -152,15 +153,18 @@ function goone_extract_scorm_token($loid, $tempdir, $filename, $filepath = null 
     }
     $tempdir = make_temp_directory('goone/');
     $packer = get_file_packer('application/zip');
-    if ($packer->extract_to_pathname($filepath, $tempdir . $loid)) {
-        $token = file_get_contents($tempdir . $loid . '/config.js');
-        // Read token from config.js file to be stored in {goone} table.
-        preg_match('/{([^}]*)}/', $token, $token);
-        $token = json_decode($token[0])->token;
-        return $token;
-    } else {
+    if (!$packer->extract_to_pathname($filepath, $tempdir . $loid)) {
         return false;
     }
+    // Read token from config.js file to be stored in {goone} table.
+    $configfile = $tempdir . $loid . '/config.js';
+    if (!is_readable($configfile)) {
+        return false;
+    }
+    if (!preg_match('/{([^}]*)}/', file_get_contents($configfile), $matches)) {
+        return false;
+    }
+    return json_decode($matches[0])->token ?? false;
 }
 
 
@@ -169,9 +173,9 @@ function goone_extract_scorm_token($loid, $tempdir, $filename, $filepath = null 
  * (defined by the form in mod_form.php) this function
  * will update an existing instance with new data.
  *
- * @param object $data
- * @param mod_page_mod_form $mform
- * @return bool
+ * @param stdClass $data The data from the form.
+ * @param mod_goone_mod_form $mform The form.
+ * @return bool Always true.
  */
 function goone_update_instance($data, $mform) {
     global $CFG, $DB;
@@ -190,8 +194,8 @@ function goone_update_instance($data, $mform) {
  * this function will permanently delete the instance
  * and any data that depends on it.
  *
- * @param int $id
- * @return bool
+ * @param int $id The ID of the instance.
+ * @return bool True when the instance was deleted, false when it does not exist.
  */
 function goone_delete_instance($id) {
     global $DB;
@@ -208,7 +212,7 @@ function goone_delete_instance($id) {
 /**
  * Adds the GO1 options to the reset form of a course.
  *
- * @param object $mform The reset form.
+ * @param MoodleQuickForm $mform The reset form.
  */
 function goone_reset_course_form_definition(&$mform) {
     $mform->addElement('header', 'gooneheader', get_string('modulenameplural', 'goone'));
@@ -219,7 +223,7 @@ function goone_reset_course_form_definition(&$mform) {
 /**
  * Gives the default values of the GO1 options on the reset form.
  *
- * @param object $course The course.
+ * @param stdClass $course The course.
  * @return array The default values.
  */
 function goone_reset_course_form_defaults($course) {
@@ -240,7 +244,7 @@ function goone_reset_course_form_defaults($course) {
  * reset form. The default keeps the GO1 records. A teacher can change the option
  * for each reset, and only that option decides what this function does.
  *
- * @param object $data The data from the reset form.
+ * @param stdClass $data The data from the reset form.
  * @return array One record for each item that this function removed.
  */
 function goone_reset_userdata($data) {
@@ -267,10 +271,10 @@ function goone_reset_userdata($data) {
 }
 
 /**
- * Returns an array of options for how GO1 courses can be presented
- * This is used by the participation report.
+ * Returns the options for how the activity opens: in the current window or in a popup.
+ * The activity form uses these options.
  *
- * @return array
+ * @return array The option labels, keyed by the value of the popup field.
  */
 function goone_get_popup_display_array() {
     return array(0 => get_string('currentwindow', 'scorm'),
@@ -279,9 +283,12 @@ function goone_get_popup_display_array() {
 
 
 /**
- * Potentially unused function
+ * Marks the activity complete for the current user.
  *
- * @param object $obj completion record object
+ * No code of the plugin calls this function.
+ *
+ * @param stdClass $obj The completion data, with the fields activityId and courseModuleId.
+ * @return void
  */
 function notify_completion($obj) {
     global $DB, $USER;
@@ -300,10 +307,11 @@ function notify_completion($obj) {
 }
 
 /**
- * Return the list if Moodle features this module supports
+ * Tells if the module supports a Moodle feature.
  *
  * @param string $feature FEATURE_xx constant for requested feature
- * @return mixed True if module supports feature, null if doesn't know
+ * @return bool|string|null True if the module supports the feature, the purpose for FEATURE_MOD_PURPOSE,
+ *     or null if the module does not know the feature.
  */
 function goone_supports($feature) {
     switch($feature) {
@@ -321,8 +329,11 @@ function goone_supports($feature) {
 }
 
 /**
- * Generates go token and writes result to plugin config
+ * Gets a new GO1 access token and writes it to the plugin config.
  *
+ * When GO1 does not give a token, the function removes the stored token.
+ *
+ * @return bool True if GO1 gave a token.
  */
 function goone_generatetoken() {
     global $CFG, $DB;
@@ -351,9 +362,11 @@ function goone_generatetoken() {
 }
 
 /**
- * Generates go token and writes result to plugin config
+ * Makes sure that the stored GO1 access token is valid.
  *
- * @return bool
+ * When the token is old or GO1 does not accept it, the function gets a new token.
+ *
+ * @return bool True if a valid token is stored.
  */
 function goone_tokentest() {
 
@@ -392,12 +405,13 @@ function goone_tokentest() {
 }
 
 /**
- * Removes HTML tags for course descriptions retreived from GO1 API
+ * Removes HTML tags for course descriptions retrieved from GO1 API
  *
- * @param object $data
- * @return object
+ * @param string|null $data The text from GO1. GO1 can send null.
+ * @return string
  */
 function goone_clean_hits($data) {
+    $data = (string) $data;
     $data = preg_replace(
         '/\\\\u[0-9A-F]{4}/i', '', str_replace("\u003C", "<", str_replace("\u003E", ">", str_replace("\/", "/", $data)))
     );
@@ -409,41 +423,41 @@ function goone_clean_hits($data) {
 }
 
 /**
- * Outputs session state to SCORM API (using PAGE API) based on saved location and completion data
+ * Gives the session state for the SCORM API, from the saved location and completion data of the current user.
  *
- * @param int $gooneid
- * @param int $cmid
+ * @param int $gooneid The ID of the goone instance.
+ * @return stdClass The data model definitions and the lesson mode for M.scorm_api.init.
  */
-function goone_session_state($gooneid, $cmid) {
-    global $CFG, $DB, $PAGE, $USER;
+function goone_session_state($gooneid) {
+    global $DB, $USER;
 
     $def = new stdClass;
     // 0 = not started, 1 = in progress, 2 = complete.
     $completionrecord = $DB->get_record(
         'goone_completion', array('gooneid' => $gooneid, 'userid' => $USER->id), $fields = '*', $strictness = IGNORE_MISSING
     );
-    $def->{(3)} = goone_scorm_def(1, '');
-    $def->{(6)} = goone_scorm_def(1, '');
+    $def->{'3'} = goone_scorm_def(1, '');
+    $def->{'6'} = goone_scorm_def(1, '');
     $cmistate = "normal";
 
     if ($completionrecord && $completionrecord->completed == 1) {
-        $def->{(3)} = goone_scorm_def(1, '');
-        $def->{(6)} = goone_scorm_def(2, $completionrecord->location);
+        $def->{'3'} = goone_scorm_def(1, '');
+        $def->{'6'} = goone_scorm_def(2, $completionrecord->location);
         $cmistate = "normal";
     }
     if ($completionrecord && $completionrecord->completed == 2) {
 
-        $def->{(3)} = goone_scorm_def(3, '');
-        $def->{(6)} = goone_scorm_def(4, '');
+        $def->{'3'} = goone_scorm_def(3, '');
+        $def->{'6'} = goone_scorm_def(4, '');
         $cmistate = "review";
     }
 
     $cmiobj = new stdClass();
-    $cmiobj->{3} = '';
-    $cmiobj->{6} = '';
+    $cmiobj->{'3'} = '';
+    $cmiobj->{'6'} = '';
     $cmiint = new stdClass();
-    $cmiint->{3} = '';
-    $cmiint->{6} = '';
+    $cmiint->{'3'} = '';
+    $cmiint->{'6'} = '';
     $cmistring256 = '^[\\u0000-\\uFFFF]{0,64000}$';
     $cmistring4096 = $cmistring256;
 
@@ -462,8 +476,9 @@ function goone_session_state($gooneid, $cmid) {
 /**
  * Populates SCORM API definition for function goone_session_state
  *
- * @param int $state
- * @param string $location
+ * @param int $state 1 = new attempt, 2 = resume, 3 = review start, 4 = review of a completed attempt.
+ * @param string|null $location The saved lesson location.
+ * @return array The SCORM 1.2 data model values, keyed by element name.
  */
 function goone_scorm_def($state, $location) {
     global $USER;
@@ -540,13 +555,13 @@ function goone_scorm_def($state, $location) {
 }
 
 /**
- * Saves GO1 course completion state if enabled.
+ * Saves the GO1 progress of a user, and marks the activity complete when the user completed it.
  *
- * @param object $cm
- * @param int $userid
- * @param string $location
- * @param string $type
- * @return bool
+ * @param stdClass|cm_info $cm The course module.
+ * @param int $userid The ID of the user.
+ * @param string $location The lesson location.
+ * @param string $type "completed" when the user completed the learning object, or any other text for progress.
+ * @return bool Always true.
  */
 function goone_set_completion($cm, $userid, $location, $type) {
     global $CFG, $DB;
@@ -585,10 +600,12 @@ function goone_set_completion($cm, $userid, $location, $type) {
 }
 
 /**
- * gets scorm_12.js file form mod_scorm, modifies the datamodelurl variable, stores in cache and Retrieves it.
- * checks against current scorm version if cache needs to be rebuilt
+ * Gets the scorm_12.js file from mod_scorm, changes its data model URL to the URL of mod_goone,
+ * and stores the result in the cache.
  *
- * @return object
+ * The cache key is the version of mod_scorm, thus a new version of mod_scorm rebuilds the cache.
+ *
+ * @return string The JavaScript of the SCORM 1.2 data model.
  */
 function goone_inject_datamodel() {
     global $CFG;
@@ -609,14 +626,15 @@ function goone_inject_datamodel() {
 /**
  * Retrieves GO1 search results from GO1 API for Content Browser
  *
- * @param array $type
- * @param array $tag
- * @param array $language
- * @param array $provider
- * @param string $keyword
- * @param string $sort
- * @param int $offset
- * @return object
+ * @param string[] $type The content types.
+ * @param string[] $tag The tags.
+ * @param string[] $language The languages.
+ * @param string[] $provider The providers.
+ * @param string $keyword The keyword.
+ * @param string $sort The sort order.
+ * @param int $offset The position of the first result.
+ * @return string|false The HTML of the results, or false when no valid token is available.
+ * @throws moodle_exception When GO1 gives no list of results.
  */
 function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset) {
     global $PAGE, $OUTPUT;
@@ -653,11 +671,11 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
     $params = "";
 
     foreach ($data as $key => $value) {
-        // Workaround for Moodle < 3.1.
+        // The text 'null' means no value.
         if ($value == 'null') {
             $value = '';
         }
-        if (!$value == '') {
+        if ((string) $value !== '') {
             $params .= $key.'='.$value.'&';
         }
     }
@@ -665,7 +683,7 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
     $params = trim($params, '&');
     // Iterating each language/tag item due to current API limitations.
     foreach ($language as $lang) {
-        // Workaround for Moodle < 3.1.
+        // The text 'null' means no value.
         if ($lang == 'null') {
             unset($lang);
         }
@@ -675,7 +693,7 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
     }
 
     foreach ($tag as $ta) {
-        // Workaround for Moodle < 3.1.
+        // The text 'null' means no value.
         if ($ta == 'null') {
             unset($ta);
         }
@@ -698,16 +716,18 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
         throw new moodle_exception('go1apierror', 'mod_goone');
     }
     foreach ($response['hits'] as &$obj) {
-        $obj['description'] = goone_clean_hits($obj['description']);
-        $obj['pricing']['price'] = '$'.$obj['pricing']['price'];
+        $obj['description'] = goone_clean_hits($obj['description'] ?? '');
+        $price = $obj['pricing']['price'] ?? null;
+        $obj['pricing']['price'] = ($price === null) ? '' : '$'.$price;
         // Set the "Included" or "Free" flag on each result.
-        if (!empty($obj['subscription']) and ($obj['subscription']['licenses'] === -1 or $obj['subscription']['licenses'] > 0)) {
+        $licenses = $obj['subscription']['licenses'] ?? 0;
+        if (!empty($obj['subscription']) and ($licenses === -1 or $licenses > 0)) {
             $obj['pricing']['price'] = get_string('included', 'goone');
         }
         if ($obj['pricing']['price'] === "$0") {
             $obj['pricing']['price'] = get_string('free', 'goone');
         }
-        if ($obj['image'] == '') {
+        if (($obj['image'] ?? '') == '') {
             $obj['image'] = "/mod/goone/pix/placeholder.png";
         }
     }
@@ -719,7 +739,7 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
 /**
  * Retrieves GO1 search facets from GO1 API for Content Browser
  *
- * @return object
+ * @return array|null The facets, or null when GO1 gives no usable answer.
  */
 function goone_get_facets() {
     global $USER;
@@ -734,12 +754,17 @@ function goone_get_facets() {
     $params = array ('facets' => 'instance,tag,language,topics',
                      'limit' => 0);
     $facets = @json_decode($curl->get($serverurl, $params), true);
+    if (!is_array($facets)) {
+        return null;
+    }
 
-    foreach ($facets['facets']['language']['buckets'] as &$obj) {
-        $obj['name'] = goone_get_lang($obj['key']);
-        // Compare 2 letter language string and set as default selection in fitler.
-        if ($obj['key'] == substr($USER->lang, 0, 2)) {
-            $obj['selected'] = "selected";
+    if (is_array($facets['facets']['language']['buckets'] ?? null)) {
+        foreach ($facets['facets']['language']['buckets'] as &$obj) {
+            $obj['name'] = goone_get_lang($obj['key']);
+            // Compare 2 letter language string and set as default selection in fitler.
+            if ($obj['key'] == substr($USER->lang, 0, 2)) {
+                $obj['selected'] = "selected";
+            }
         }
     }
     return $facets;
@@ -772,10 +797,10 @@ function goone_get_lang($lang = '') {
 }
 
 /**
- * Retreives detailed GO1 course information for modal popup in GO1 Content Browser
+ * Retrieves detailed GO1 course information for modal popup in GO1 Content Browser
  *
- * @param int $loid
- * @return object
+ * @param int $loid The ID of the GO1 learning object.
+ * @return string|null The learning object as JSON, or null when no valid token is available.
  */
 function goone_modal_overview($loid) {
     global $PAGE, $OUTPUT;
@@ -795,7 +820,7 @@ function goone_modal_overview($loid) {
             $obj = goone_convert_hours_mins($obj);
         }
     }
-    if ($lodata['image'] == " ") {
+    if (($lodata['image'] ?? null) == " ") {
         unset($lodata['image']);
     }
 
@@ -805,16 +830,16 @@ function goone_modal_overview($loid) {
 /**
  * Converts timecode to human readable time for GO1 course durations from GO1 API results
  *
- * @param int $time
- * @param string $format
- * @return string
+ * @param int|float|string $time The duration in minutes.
+ * @param string $format The sprintf() format for the hours and the minutes.
+ * @return string|null The duration, or null when it is less than 1 minute.
  */
 function goone_convert_hours_mins($time, $format = '%02d:%02d') {
     if ($time < 1) {
         return;
     }
     $hours = floor(floatval($time) / 60);
-    $minutes = (floatval($time) % 60);
+    $minutes = (int) floatval($time) % 60;
 
     return sprintf($format, $hours, $minutes);
 }
@@ -822,8 +847,10 @@ function goone_convert_hours_mins($time, $format = '%02d:%02d') {
 /**
  * Capability check for adding or updating a goone activity
  *
- * @param string $mode
- * @param int $id
+ * @param string $mode 'add' (course context) or 'update' (module context)
+ * @param int $id Course id when adding, goone instance id when updating
+ * @return bool Always true. The function throws an exception when the user does not have the capability.
+ * @throws required_capability_exception When the user cannot add or update the activity.
  */
 function goone_check_capabilities($mode, $id) {
     $context = goone_get_browse_context($mode, $id);
@@ -837,6 +864,7 @@ function goone_check_capabilities($mode, $id) {
  * @param string $mode 'add' (course context) or 'update' (module context)
  * @param int $id Course id when adding, goone instance id when updating
  * @return context The course or module context used for the capability check
+ * @throws moodle_exception When the mode is not known.
  */
 function goone_get_browse_context($mode, $id) {
     global $DB;
@@ -859,6 +887,7 @@ function goone_get_browse_context($mode, $id) {
 /**
  * Construct GO1 signup url
  *
+ * @return string The URL, with the partner ID when the partnerid setting has a value.
  */
 function goone_signup_url() {
     global $CFG;
@@ -877,8 +906,8 @@ function goone_signup_url() {
 /**
  * Get Moodle user by GO1 userid.
  *
- * @param int $gooneuserid
- * @return mixed stdclass|bool DB record object from {user} table or false
+ * @param int $gooneuserid The ID of the GO1 user.
+ * @return stdClass|false DB record object from {user} table or false
  * @throws moodle_exception When the GO1 user lookup fails, so that the caller can try again later.
  */
 function goone_get_moodle_user($gooneuserid) {
@@ -989,8 +1018,8 @@ function goone_get_moodle_user($gooneuserid) {
 /**
  * Return the max and min used based on selected duration option
  *
- * @param int $selectedduration selected duration
- * @return array with min max minutes 
+ * @param string $selectedduration The selected duration option, '1' to '4'.
+ * @return array The minimum and the maximum in minutes, keyed 'min' and 'max'. Option '4' has no maximum.
  */
 function bulk_mod_goone_duration_get_min_max($selectedduration) {
     /*
@@ -1017,16 +1046,19 @@ function bulk_mod_goone_duration_get_min_max($selectedduration) {
     return $la_minmax;
 }
 /**
- * Retrieves GO1 search results from GO1 API for Content Browser
+ * Retrieves GO1 search results from GO1 API for the bulk content browser
  *
- * @param array $type
- * @param array $topic
- * @param array $language
- * @param array $provider
- * @param string $keyword
- * @param string $sort
- * @param int $offset
- * @return object
+ * @param string[] $type The content types.
+ * @param string[] $topic The topics.
+ * @param string[] $language The languages.
+ * @param string[] $provider The providers.
+ * @param string $keyword The keyword.
+ * @param string $sort The sort order.
+ * @param int $offset The position of the first result.
+ * @param bool $loadmore True when the results go below the results that the page already shows.
+ * @param string[] $duration The duration options. See bulk_mod_goone_duration_get_min_max().
+ * @return string|false The HTML of the results, or false when no valid token is available.
+ * @throws moodle_exception When GO1 gives no list of results.
  */
 function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, $sort, $offset, $loadmore, $duration) {
     global $PAGE, $OUTPUT;
@@ -1058,18 +1090,18 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
     }
     $params = "";
     foreach ($data as $key => $value) {
-        // Workaround for Moodle < 3.1.
+        // The text 'null' means no value.
         if ($value == 'null') {
             $value = '';
         }
-        if (!$value == '') {
+        if ((string) $value !== '') {
             $params .= $key.'='.$value.'&';
         }
     }
     $params = trim($params, '&');
     // Iterating each language/tag item due to current API limitations.
     foreach ($language as $lang) {
-        // Workaround for Moodle < 3.1.
+        // The text 'null' means no value.
         if ($lang == 'null') {
             unset($lang);
         }
@@ -1078,7 +1110,7 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
         }
     }
     foreach ($topic as $ta) {
-        // Workaround for Moodle < 3.1.
+        // The text 'null' means no value.
         if ($ta == 'null') {
             unset($ta);
         }
@@ -1091,12 +1123,10 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
     if (!empty($duration)) {
         foreach ($duration as $option) {
             $minmax = bulk_mod_goone_duration_get_min_max($option);
-            if (isset($minmax['min']) && $minmax['max'] ) {
-                $durationquery .= "duration%5B".$countdurations."%5D%5Bmin%5D=".$minmax['min']."&duration%5B".$countdurations."%5D%5Bmax%5D=".$minmax["max"]."&";
-            } else if (isset($minmax['min']) && !isset($minmax['max'])) {
-                $durationquery .= "duration%5B".$countdurations."%5D%5Bmin%5D=".$minmax['min']."&";
-            } else if (isset($minmax['max']) && !isset($minmax['min'])) {
-                $durationquery .= "duration%5B".$countdurations."%5D%max%5D=".$minmax['max']."&";
+            foreach (['min', 'max'] as $limit) {
+                if (isset($minmax[$limit])) {
+                    $durationquery .= "duration%5B".$countdurations."%5D%5B".$limit."%5D=".$minmax[$limit]."&";
+                }
             }
             $countdurations++;
         }
@@ -1112,23 +1142,25 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
         throw new moodle_exception('go1apierror', 'mod_goone');
     }
     foreach ($response['hits'] as &$obj) {
-        $obj['description'] = goone_clean_hits($obj['description']);
-        $obj['title'] = str_replace('"', '', $obj['title']);
+        $obj['description'] = goone_clean_hits($obj['description'] ?? '');
+        $obj['title'] = str_replace('"', '', $obj['title'] ?? '');
         $obj['title'] = str_replace("'", '', $obj['title']);
         $obj['title'] = goone_clean_hits($obj['title']);
-        $obj['provider']['name'] = goone_clean_hits($obj['provider']['name']);
-        $obj['pricing']['price'] = '$'.$obj['pricing']['price'];
+        $obj['provider']['name'] = goone_clean_hits($obj['provider']['name'] ?? '');
+        $price = $obj['pricing']['price'] ?? null;
+        $obj['pricing']['price'] = ($price === null) ? '' : '$'.$price;
         // Set the "Included" or "Free" flag on each result.
-        if (!empty($obj['subscription']) and ($obj['subscription']['licenses'] === -1 or $obj['subscription']['licenses'] > 0)) {
+        $licenses = $obj['subscription']['licenses'] ?? 0;
+        if (!empty($obj['subscription']) and ($licenses === -1 or $licenses > 0)) {
             $obj['pricing']['price'] = get_string('included', 'mod_goone');
         }
         if ($obj['pricing']['price'] === "$0") {
             $obj['pricing']['price'] = get_string('free', 'mod_goone');
         }
-        if ($obj['image'] == '') {
+        if (($obj['image'] ?? '') == '') {
             $obj['image'] = "/mod/goone/pix/placeholder.png";
         }
-         $obj['language'] = goone_get_lang($obj['language']);
+        $obj['language'] = goone_get_lang((string) ($obj['language'] ?? ''));
     }
     $response['loadmore'] = $loadmore;
     $context = context_system::instance();
@@ -1138,17 +1170,17 @@ function bulk_mod_goone_get_hits($type, $topic, $language, $provider, $keyword, 
 
 
 /**
- * Retreives detailed GO1 course information for modal popup in GO1 Content Browser
+ * Retrieves detailed GO1 course information for modal popup in the bulk content browser
  *
- * @param int $loid
- * @return object
+ * @param int $loid The ID of the GO1 learning object.
+ * @return string|null The learning object as JSON, or null when no valid token is available.
  */
 function bulk_mod_goone_modal_overview($loid) {
     global $PAGE, $OUTPUT;
     if (!goone_tokentest()) {
         return;
     }
-    $lodata = bulk_mod_goone_get_learnig_objective_info($loid);
+    $lodata = bulk_mod_goone_get_learning_object_info($loid);
     // Data cleanup and prettification.
     $lodata['has_items'] = !empty($lodata['items']);
     if (!empty($lodata['delivery'])) {
@@ -1156,17 +1188,17 @@ function bulk_mod_goone_modal_overview($loid) {
             $obj = goone_convert_hours_mins($obj);
         }
     }
-    if ($lodata['image'] == " ") {
+    if (($lodata['image'] ?? null) == " ") {
         unset($lodata['image']);
     }
     return json_encode($lodata);
 }
 
 /**
- * Will return object of found courses
+ * Finds the courses whose short name or full name holds a text, with their sections.
  *
- * @param string $stringtosearch
- * @return array $result  courses found
+ * @param string $stringtosearch The text to find.
+ * @return string|null The courses as JSON, or null when the text is empty.
  */
 function bulk_mod_goone_modal_search_course_result($stringtosearch = '') {
     global $DB;
@@ -1200,19 +1232,17 @@ function bulk_mod_goone_modal_search_course_result($stringtosearch = '') {
              }
              $courseobj->sections = $la_coursesections;
         }
-        foreach ($searchresult as $key => $courseobj) {
-            $la_searchresult[] = $courseobj;
-        }
-        $result['courses'] = $la_searchresult;
+        $result['courses'] = array_values($searchresult);
         return json_encode($result);
     }
 }
 
 /**
- * Method to create a course per seleted items
+ * Creates one course for each selected learning object, with the activity in it.
  *
- * @param string $items items selected
- * @return string return message if success or failed
+ * @param string $items The IDs of the selected learning objects, separated by commas.
+ * @return string|null The HTML links to the courses, or null when GO1 does not give the only learning object.
+ * @throws moodle_exception When the course or the activity cannot be created.
  */
 function bulk_mod_goone_process_course_per_item($items = '') {
     global $CFG;
@@ -1221,7 +1251,7 @@ function bulk_mod_goone_process_course_per_item($items = '') {
     $coursescreated ="";
     $htmlurls = "";
    if ($multipleitems === false) {
-        $loinfo = bulk_mod_goone_get_learnig_objective_info($items);
+        $loinfo = bulk_mod_goone_get_learning_object_info($items);
         if ($loinfo) {
             if ($createdcourse = bulk_mod_goone_create_course($loinfo)) {
                 if (bulk_mod_goone_create_assign_module($loinfo, $createdcourse)) {
@@ -1241,7 +1271,7 @@ function bulk_mod_goone_process_course_per_item($items = '') {
           $coursescreated = array();
           foreach ($la_items as $loid) {
             if (empty($loid)) continue;
-              $loinfo = bulk_mod_goone_get_learnig_objective_info($loid);
+              $loinfo = bulk_mod_goone_get_learning_object_info($loid);
               if ($loinfo) {
                   if ($createdcourse = bulk_mod_goone_create_course($loinfo)) {
                         if (bulk_mod_goone_create_assign_module($loinfo, $createdcourse)) {
@@ -1266,16 +1296,18 @@ function bulk_mod_goone_process_course_per_item($items = '') {
     }
 }
 /**
- * Method to create a single course with all seleted items
+ * Creates one course with an activity for each selected learning object.
  *
- * @param string $items items selected
- * @return string return message if success or failed
+ * @param string $items The IDs of the selected learning objects, separated by commas.
+ * @param string $coursename The name of the new course. For one learning object, the course has the title of the learning object.
+ * @return string|null The HTML links to the course, or null when GO1 does not give the only learning object.
+ * @throws moodle_exception When the course or an activity cannot be created.
  */
 function bulk_mod_goone_process_course_single_course($items = '', $coursename = '') {
     global $CFG;
     $multipleitems = strpos($items, ',');
    if ($multipleitems === false) {
-        $loinfo = bulk_mod_goone_get_learnig_objective_info($items);
+        $loinfo = bulk_mod_goone_get_learning_object_info($items);
         if ($loinfo) {
             if ($createdcourse = bulk_mod_goone_create_course($loinfo, $coursename)) {
                 if (bulk_mod_goone_create_assign_module($loinfo, $createdcourse)) {
@@ -1299,7 +1331,7 @@ function bulk_mod_goone_process_course_single_course($items = '', $coursename = 
       foreach ($la_items as $loid) {
         if (empty($loid)) continue; 
         // add each activity to the course in first topic
-        $loinfo = bulk_mod_goone_get_learnig_objective_info($loid);
+        $loinfo = bulk_mod_goone_get_learning_object_info($loid);
         if ($loinfo) {
             if (!bulk_mod_goone_create_assign_module($loinfo, $createdcourse)) {
                 throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
@@ -1314,10 +1346,12 @@ function bulk_mod_goone_process_course_single_course($items = '', $coursename = 
 
 
 /**
- * Method to add the activity to existing course
+ * Adds an activity for each selected learning object to a section of an existing course.
  *
- * @param string $course_section selected course and section
- * @return string return course url
+ * @param string $course_section The course ID and the section number, separated by '-'.
+ * @param string $selecteditemsids The IDs of the selected learning objects, separated by commas.
+ * @return string The HTML links to the course.
+ * @throws moodle_exception When an activity cannot be created.
  */
 function bulk_mod_goone_process_add_to_existing_course($course_section, $selecteditemsids) {
     global $DB, $CFG;
@@ -1327,7 +1361,7 @@ function bulk_mod_goone_process_add_to_existing_course($course_section, $selecte
     $course = $DB->get_record('course', array('id'=>$la_coursesection[0]));
     if ($multipleitems === false) {
         // add activity to the course in selected topic
-        $loinfo = bulk_mod_goone_get_learnig_objective_info($selecteditemsids);
+        $loinfo = bulk_mod_goone_get_learning_object_info($selecteditemsids);
         if ($loinfo) {
             if (!bulk_mod_goone_create_assign_module($loinfo, $course, $la_coursesection[1])) {
                 throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
@@ -1337,7 +1371,7 @@ function bulk_mod_goone_process_add_to_existing_course($course_section, $selecte
         foreach ($la_selecteditemsids as $loid) {
             if (empty($loid)) continue; 
             // add each activity to the course in selected topic
-            $loinfo = bulk_mod_goone_get_learnig_objective_info($loid);
+            $loinfo = bulk_mod_goone_get_learning_object_info($loid);
             if ($loinfo) {
                 if (!bulk_mod_goone_create_assign_module($loinfo, $course, $la_coursesection[1])) {
                     throw new moodle_exception('createprocessactivityfailed', 'mod_goone');
@@ -1351,20 +1385,24 @@ function bulk_mod_goone_process_add_to_existing_course($course_section, $selecte
 }
 
 /**
- * Retrieves GO1 learning objective info
+ * Retrieves the data of a GO1 learning object.
  *
- * @return object
+ * @param int|string $loid The ID of the GO1 learning object.
+ * @return mixed The decoded answer of GO1, usually an array, or null when the answer is not JSON.
  */
-function bulk_mod_goone_get_learnig_objective_info($loid) {
+function bulk_mod_goone_get_learning_object_info($loid) {
     $loinfo = bulk_mod_goone_api_custom_api_request('learning-objects', $loid);
     return $loinfo;
 }
 
 /**
- * Method to create course
+ * Creates a course for a learning object, or an empty course with a name.
  *
- * @param string $loinfo Learning Object info fetch from GO1 API
- * @return object $createdcourse return created course
+ * When a course for the learning object already exists, the function gives that course.
+ *
+ * @param array|null $loinfo The learning object from the GO1 API, or null for an empty course.
+ * @param string $coursename The name of the empty course. The function uses it only when $loinfo is empty.
+ * @return stdClass The course.
  */
 function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
     global $DB;
@@ -1389,8 +1427,8 @@ function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
             return $coursefound;
         } else {
             $createdcourse = create_course($data);
-            $imageurl = $loinfo['image'];
-            if (isset($loinfo['image']) && !empty($loinfo['image'])) {
+            if (!empty($loinfo['image'])) {
+                $imageurl = $loinfo['image'];
                 $context = context_course::instance($createdcourse->id);
                 $filerecord = array(
                     'contextid' => $context->id,
@@ -1419,11 +1457,12 @@ function bulk_mod_goone_create_course($loinfo = null, $coursename = '') {
     }
 }
 /**
- * Method to add activity to course
+ * Adds a GO1 activity for a learning object to a course.
  *
- * @param string $loinfo Learning Object info fetch from GO1 API
- * @param $course created course or course to update
- * @return object $cminfo course module info
+ * @param array $loinfo The learning object from the GO1 API.
+ * @param stdClass $course The course.
+ * @param int|string $topic The section number.
+ * @return stdClass The module information that add_moduleinfo() gives.
  */
 function bulk_mod_goone_create_assign_module($loinfo, $course, $topic = 0) {
     global $DB;
@@ -1460,7 +1499,12 @@ function bulk_mod_goone_create_assign_module($loinfo, $course, $topic = 0) {
 }
 
 /**
- * Method to get info from GO1 API with different methods 
+ * Sends a GET request to the GO1 API v2, and writes a log row when GO1 answers 404.
+ *
+ * @param string $endpoint_method The endpoint, for example 'learning-objects'.
+ * @param int|string $value_id The ID to add to the endpoint. Empty means no ID.
+ * @param array|null $params The query parameters.
+ * @return mixed The decoded answer of GO1, usually an array, or null when the answer is not JSON.
  */
 function bulk_mod_goone_api_custom_api_request($endpoint_method = "" , $value_id = "", $params = null) {
     global $DB;
@@ -1491,8 +1535,13 @@ function bulk_mod_goone_api_custom_api_request($endpoint_method = "" , $value_id
 
 
 /**
- * Method to get info from GO1 API V3 with different methods
+ * Sends a request to the GO1 API v3, and writes a log row when GO1 answers 404.
  *
+ * @param string $endpoint The endpoint, for example 'user-accounts'.
+ * @param int|string $value_id The ID to add to the endpoint. Empty means no ID.
+ * @param string $method The name of the curl method, for example 'get' or 'post'.
+ * @param array|null $params The parameters of the request.
+ * @return mixed The decoded answer of GO1, usually an array, or null when the answer is not JSON.
  */
 function bulk_mod_goone_apiv3_custom_api_request($endpoint, $value_id = "", $method = 'get', $params = null) {
     global $DB;
@@ -1527,11 +1576,10 @@ function bulk_mod_goone_apiv3_custom_api_request($endpoint, $value_id = "", $met
 
 
 /**
- * Method to generate a random string to be use a secret to sing the API calls 
+ * Generates a random secret for the GO1 webhook. GO1 uses the secret to sign the webhook requests.
  *
- * @param string $loinfo Learning Object info fetch from GO1 API
- * @param string $course created course or course to update
- * @return string $cminfo course module info
+ * @param int $n The length of the secret.
+ * @return string The secret.
  */
 function bulk_mod_goone_create_api_secret_key($n = 12) {
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*(){}[]_+-';
@@ -1622,6 +1670,11 @@ function mod_goone_webhook_log_excerpt(string $request): string {
         get_string('webhooklogtruncated', 'mod_goone', $length);
 }
 
+/**
+ * Shows the GO1 webhook log page, 100 rows on each page.
+ *
+ * @return void
+ */
 function mod_goone_view_api_payload_logs() {
     global $PAGE, $OUTPUT, $DB;
     require_login();
@@ -1656,6 +1709,13 @@ function mod_goone_view_api_payload_logs() {
     echo $OUTPUT->footer();
 }
 
+/**
+ * Processes a GO1 webhook request, and sets the HTTP status code of the response.
+ *
+ * The function checks the signature of the request before it processes the event.
+ *
+ * @return void
+ */
 function mod_goone_api_payload_process_post() {
 
     global $DB;
@@ -1736,8 +1796,8 @@ function mod_goone_api_payload_signature_valid(string $request, string $header, 
  * Process the request after basic checks.
  * The function is split to allow for internal testing (test webhook requests omitting the signature check).
  *
- * @param array $la_postjson - Decoded JSON request
- * @param mixed $request - Original JSON request (to append in log)
+ * @param array|null $la_postjson The decoded JSON request. It is null when the request is not JSON.
+ * @param string $request The original JSON request, for the log.
  *
  * @return int The HTTP status code for the response to GO1. A code that is not 2xx makes GO1 send
  *     the event again.

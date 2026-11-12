@@ -52,28 +52,28 @@ class setting_statictext extends \admin_setting {
         $this->text = $text;
     }
     /**
-     * unused function to write setting data
+     * Does not write anything, because the setting only shows text.
      *
-     * @param object $data
-     * @return void
+     * @param mixed $data The submitted value.
+     * @return string An empty string, which means no error.
      */
     public function write_setting($data) {
         return '';
     }
     /**
-     * retreive setting object for renderer
+     * Gives a value, so that the admin tree does not treat the setting as a new setting.
      *
-     * @return bool
+     * @return bool Always true.
      */
     public function get_setting() {
         return true;
     }
     /**
-     * ouput setting item html into form
+     * Output setting item html into form
      *
-     * @param object $data setting
-     * @param string $query null
-     * @return string
+     * @param mixed $data The value of the setting. The function does not use it.
+     * @param string $query The search query of the admin page.
+     * @return string The HTML of the setting.
      */
     public function output_html($data, $query = '') {
         return $this->text;

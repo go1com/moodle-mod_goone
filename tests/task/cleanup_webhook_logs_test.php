@@ -34,6 +34,7 @@ use advanced_testcase;
  *
  * @covers \mod_goone\task\cleanup_webhook_logs
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_goone\task\cleanup_webhook_logs::class)]
 final class cleanup_webhook_logs_test extends advanced_testcase {
 
     protected function setUp(): void {
@@ -44,6 +45,11 @@ final class cleanup_webhook_logs_test extends advanced_testcase {
         $DB->insert_record('goone_webhook_logs', ['message_info' => 'new', 'timecreated' => time() - 89 * DAYSECS]);
     }
 
+    /**
+     * Return the messages of the webhook log, in the order of the rows.
+     *
+     * @return string[] The messages.
+     */
     private static function messages(): array {
         global $DB;
         return array_values($DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1 ORDER BY id'));
