@@ -83,6 +83,7 @@ class browser_js_test extends advanced_testcase {
      * @param array $selects The ids of the multiple selects.
      * @dataProvider module_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('module_provider')]
     public function test_module_defines_the_guard(string $module, array $selects): void {
         $source = $this->read("amd/src/$module.js");
 
@@ -99,6 +100,7 @@ class browser_js_test extends advanced_testcase {
      * @param array $selects The ids of the multiple selects.
      * @dataProvider module_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('module_provider')]
     public function test_no_multiple_select_is_read_without_the_guard(string $module, array $selects): void {
         $source = $this->read("amd/src/$module.js");
 
@@ -120,6 +122,7 @@ class browser_js_test extends advanced_testcase {
      * @param array $selects The ids of the multiple selects.
      * @dataProvider module_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('module_provider')]
     public function test_no_map_call_on_an_unguarded_value(string $module, array $selects): void {
         $source = $this->read("amd/src/$module.js");
 
@@ -141,6 +144,7 @@ class browser_js_test extends advanced_testcase {
      * @param array $selects The ids of the multiple selects.
      * @dataProvider module_provider
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('module_provider')]
     public function test_built_file_holds_the_guard(string $module, array $selects): void {
         $built = $this->read("amd/build/$module.min.js");
 

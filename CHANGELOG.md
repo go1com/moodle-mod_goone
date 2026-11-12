@@ -20,7 +20,7 @@ Changes since the release MOODLE403_2024040500.
 
 ### Changed
 
-- Supports Moodle 4.5 to 5.3. Requires Moodle 4.5 or later.
+- Supports Moodle 4.5 to 5.3. Requires Moodle 4.5 or later. PHP 8.1 to 8.4.
 - An activity completes when the GO1 enrolment has the status "completed". The plugin no longer uses the "pass" value of the enrolment.
 - The completion task runs once a day at a random time by default. An administrator's schedule does not change.
 - The webhook processes only "enrollment.complete" events. It ignores all other events and events without the necessary data.

@@ -26,7 +26,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 /**
- * Define the complete choice structure for backup, with file and id annotations
+ * Define the complete goone structure for backup, with file and id annotations
  *
  * @package   mod_goone
  * @copyright 2019, eCreators PTY LTD
@@ -35,8 +35,9 @@ defined('MOODLE_INTERNAL') || die();
 class backup_goone_activity_structure_step extends backup_activity_structure_step {
 
     /**
-     * Define the structure for the assign activity
-     * @return void
+     * Define the structure for the goone activity
+     *
+     * @return backup_nested_element The root element, wrapped into the activity structure.
      */
     protected function define_structure() {
 

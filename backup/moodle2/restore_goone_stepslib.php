@@ -27,7 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Goone restore task that provides all the settings and steps to perform one complete restore of the activity.
+ * Structure step to restore one goone activity, with its completion records when the backup holds user data.
  * @package   mod_goone
  * @copyright 2019, eCreators PTY LTD
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -37,7 +37,7 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
     /**
      * Define the structure of the restore workflow.
      *
-     * @return restore_path_element $structure
+     * @return restore_path_element[] The paths, wrapped into the activity structure.
      */
     protected function define_structure() {
 
@@ -56,7 +56,7 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
 
     /**
      * Process a goone restore.
-     * @param object $data The data in object form
+     * @param array $data The data of the goone element.
      * @return void
      */
     protected function process_goone($data) {
@@ -72,8 +72,8 @@ class restore_goone_activity_structure_step extends restore_activity_structure_s
         $this->apply_activity_instance($newitemid);
     }
     /**
-     * Process  goone activity completions
-     * @param object $data The data in object form
+     * Process goone activity completions
+     * @param array $data The data of the goone_completion element.
      * @return void
      */
     protected function process_goone_completion($data) {

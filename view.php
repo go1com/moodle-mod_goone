@@ -90,7 +90,7 @@ $data = array(
 );
 echo $OUTPUT->render_from_template('mod_goone/datamodel', $data);
 
-$sstate = goone_session_state($goone->id, $cmid);
+$sstate = goone_session_state($goone->id);
 if (!empty($sstate)) {
     $PAGE->requires->js_init_call(
         'M.scorm_api.init', array($sstate->def, $sstate->cmiobj, $sstate->cmiint, $sstate->cmistring256,

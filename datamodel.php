@@ -63,7 +63,8 @@ require_login($course, false, $cm);
 if ((!empty($scoid)) && confirm_sesskey()) {
     $result = true;
     $request = null;
-    foreach (data_submitted() as $element => $value) {
+    // data_submitted() gives false when the request has no POST data.
+    foreach (data_submitted() ?: [] as $element => $value) {
         $element = str_replace('__', '.', $element);
         if ($element == 'cmi.core.lesson_location') {
             $netelement = preg_replace('/\.N(\d+)\./', "\.\$1\.", $element);

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Default navigation for visitng plugin directory
+ * Default navigation for visiting plugin directory
  *
  * @package   mod_goone
  * @copyright 2019, eCreators PTY LTD

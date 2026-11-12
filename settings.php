@@ -39,7 +39,7 @@ if ($ADMIN->fulltree) {
     $displayoptions = resourcelib_get_displayoptions(array(RESOURCELIB_DISPLAY_OPEN, RESOURCELIB_DISPLAY_POPUP));
     $defaultdisplayoptions = array(RESOURCELIB_DISPLAY_OPEN);
     // GO1 settings are available to selected admins (in $CFG->mod_goone_admin_users), or to ALL admins.
-    if (empty($CFG->mod_goone_admin_users) || in_array($USER->username, $CFG->mod_goone_admin_users)) {
+    if (empty($CFG->mod_goone_admin_users) || in_array($USER->username, (array) $CFG->mod_goone_admin_users)) {
 
 
         // The button asks the user to agree, then sends the request and shows the result on
