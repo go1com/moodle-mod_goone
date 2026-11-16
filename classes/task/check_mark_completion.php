@@ -24,7 +24,7 @@ require_once($CFG->libdir.'/enrollib.php');
 require_once($CFG->libdir.'/accesslib.php');
 
 /**
- * A schedule task for goone cron.
+ * A scheduled task that gets the completed GO1 enrolments and marks the activities complete.
  *
  * @package   mod_goone
  * @copyright 2024 Esteban Echavarria (esteban.echavarria@openlms.net)
@@ -45,7 +45,9 @@ class check_mark_completion extends \core\task\scheduled_task {
     }
 
     /**
-     * Run assignment cron.
+     * Gets the completed GO1 enrolments of each activity, and marks the activity complete for the matched users.
+     *
+     * @return bool False when a GO1 request or a user failed, otherwise true.
      */
     public function execute() {
         global $CFG, $DB;

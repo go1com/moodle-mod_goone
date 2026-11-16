@@ -44,7 +44,13 @@ require_once($CFG->dirroot . '/mod/goone/lib.php');
  * @covers ::mod_goone_create_webhook
  * @covers ::mod_goone_send_webhook_request
  * @covers ::mod_goone_webhook_result_is_success
+ * @covers ::mod_goone_webhook_repair_payload
  */
+#[\PHPUnit\Framework\Attributes\CoversFunction('mod_goone_check_webhook')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('mod_goone_create_webhook')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('mod_goone_send_webhook_request')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('mod_goone_webhook_result_is_success')]
+#[\PHPUnit\Framework\Attributes\CoversFunction('mod_goone_webhook_repair_payload')]
 final class webhook_registration_test extends advanced_testcase {
 
     protected function setUp(): void {
@@ -60,6 +66,9 @@ final class webhook_registration_test extends advanced_testcase {
 
     /**
      * Queue GO1 API responses in the order that the code requests them.
+     *
+     * @param string ...$responses The bodies of the responses.
+     * @return void
      */
     private static function mock_api(string ...$responses): void {
         foreach (array_reverse($responses) as $response) {
@@ -68,7 +77,9 @@ final class webhook_registration_test extends advanced_testcase {
     }
 
     /**
-     * Return the number of queued GO1 responses that no request has used.
+     * Return the number of queued GO1 responses that no request has used, and remove them.
+     *
+     * @return int The number of unused responses.
      */
     private static function unused_mock_responses(): int {
         $prop = new \ReflectionProperty(\curl::class, 'mockresponses');
@@ -78,17 +89,33 @@ final class webhook_registration_test extends advanced_testcase {
         return $count;
     }
 
+    /**
+     * Return a GO1 response with a list of webhooks.
+     *
+     * @param string ...$urls The URL of each webhook.
+     * @return string The body of the response.
+     */
     private static function webhook_list(string ...$urls): string {
         $hits = array_map(fn($url) => ['id' => 'id-' . md5($url), 'url' => $url, 'secret_key' => 'their secret',
             'event_types' => ['enrollment.complete'], 'status' => 'active'], $urls);
         return json_encode(['total' => count($hits), 'hits' => $hits]);
     }
 
+    /**
+     * Return the GO1 response for a webhook that GO1 created.
+     *
+     * @return string The body of the response.
+     */
     private static function created_response(): string {
         return json_encode(['id' => 'new-id', 'url' => 'https://www.example.com/mod/goone/payload.php',
             'secret_key' => 'the new secret', 'event_types' => ['enrollment.complete'], 'status' => 'active']);
     }
 
+    /**
+     * Return all the messages of the webhook log.
+     *
+     * @return string The messages, one on each line.
+     */
     private static function logs(): string {
         global $DB;
         return implode("\n", $DB->get_fieldset_select('goone_webhook_logs', 'message_info', '1 = 1'));
@@ -160,9 +187,6 @@ final class webhook_registration_test extends advanced_testcase {
         $this->assertStringContainsString('Forbidden', self::logs());
     }
 
-    /**
-     * @covers ::mod_goone_webhook_repair_payload
-     */
     public function test_repair_payload_keeps_other_events_and_adds_completion_event(): void {
         $webhook = ['id' => 'abc', 'event_types' => ['enrollment.create', 'content.update'], 'status' => 'inactive'];
 
@@ -175,9 +199,6 @@ final class webhook_registration_test extends advanced_testcase {
         ], $payload);
     }
 
-    /**
-     * @covers ::mod_goone_webhook_repair_payload
-     */
     public function test_repair_payload_does_not_repeat_completion_event(): void {
         $webhook = ['id' => 'abc', 'event_types' => ['enrollment.complete']];
 
@@ -237,6 +258,7 @@ final class webhook_registration_test extends advanced_testcase {
      * @param string $code The result of mod_goone_create_webhook().
      * @param bool $expected If the result is a success.
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('result_code_provider')]
     public function test_result_is_success(string $code, bool $expected): void {
         $this->assertSame($expected, mod_goone_webhook_result_is_success($code));
     }
@@ -247,6 +269,7 @@ final class webhook_registration_test extends advanced_testcase {
      * @dataProvider result_code_provider
      * @param string $code The result of mod_goone_create_webhook().
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('result_code_provider')]
     public function test_result_has_a_message(string $code): void {
         $this->assertTrue(get_string_manager()->string_exists($code, 'mod_goone'),
             "No message for the result '$code'");

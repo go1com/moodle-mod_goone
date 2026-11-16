@@ -37,20 +37,22 @@ use core_external\external_value;
 use core_external\external_warnings;
 
 /**
- * mod_goone functions
+ * The external functions of the GO1 content browser and the bulk content browser.
  */
 class mod_goone_external extends external_api {
 
     /**
-     * Describes the parameters for get_hits
-     * @param array $type
-     * @param array $topic
-     * @param array $language
-     * @param array $provider
-     * @param string $keyword
-     * @param string $sort
-     * @param int $offset
-     * @return external_function_parameters
+     * Gives the GO1 search results for the content browser.
+     *
+     * @param string[] $type The content types.
+     * @param string[] $tag The tags.
+     * @param string[] $language The languages.
+     * @param string[] $provider The providers.
+     * @param string $keyword The keyword.
+     * @param string $sort The sort order.
+     * @param int $offset The position of the first result.
+     * @param int $contextid The context of the course or the module that the activity is added to.
+     * @return array The HTML of the results in 'result', and the warnings.
      */
     public static function get_hits($type, $tag, $language, $provider, $keyword, $sort, $offset, $contextid) {
         $context = context::instance_by_id($contextid);
@@ -98,9 +100,11 @@ class mod_goone_external extends external_api {
         ]);
     }
     /**
-     * Describes the parameters for get_modal
-     * @param string $loid
-     * @return external_function_parameters
+     * Gives the details of a GO1 learning object for the content browser.
+     *
+     * @param int $loid The ID of the GO1 learning object.
+     * @param int $contextid The context of the course or the module that the activity is added to.
+     * @return array The learning object as JSON in 'result', and the warnings.
      */
     public static function get_modal($loid, $contextid) {
         $context = context::instance_by_id($contextid);
@@ -138,17 +142,18 @@ class mod_goone_external extends external_api {
     }
 
     /**
-     * Describes the parameters for get_hits
-     * @param array $type
-     * @param array $topic
-     * @param array $language
-     * @param array $provider
-     * @param string $keyword
-     * @param string $sort
-     * @param int $offset
-     * @param bool $loadmore
-     * @param int $duration
-     * @return external_function_parameters
+     * Gives the GO1 search results for the bulk content browser.
+     *
+     * @param string[] $type The content types.
+     * @param string[] $topic The topics.
+     * @param string[] $language The languages.
+     * @param string[] $provider The providers.
+     * @param string $keyword The keyword.
+     * @param string $sort The sort order.
+     * @param int $offset The position of the first result.
+     * @param bool $loadmore True when the results go below the results that the page already shows.
+     * @param string[] $duration The duration options.
+     * @return array The HTML of the results in 'result', and the warnings.
      */
     public static function bulk_goone_get_hits($type, $topic, $language, $provider, $keyword, $sort, $offset, $loadmore, $duration) {
         $context = context_system::instance();
@@ -162,7 +167,7 @@ class mod_goone_external extends external_api {
     }
 
     /**
-     * Describes the get_hits return value
+     * Describes the bulk_goone_get_hits return value
      * @return external_single_structure
      */
     public static function bulk_goone_get_hits_returns() {
@@ -173,7 +178,7 @@ class mod_goone_external extends external_api {
     }
 
     /**
-     * Describes the parameters for get_hits
+     * Describes the parameters for bulk_goone_get_hits
      * @return external_function_parameters
      */
     public static function bulk_goone_get_hits_parameters() {
@@ -195,9 +200,10 @@ class mod_goone_external extends external_api {
         ]);
     }
     /**
-     * Describes the parameters for get_modal
-     * @param string $loid
-     * @return external_function_parameters
+     * Gives the details of a GO1 learning object for the bulk content browser.
+     *
+     * @param int $loid The ID of the GO1 learning object.
+     * @return array The learning object as JSON in 'result', and the warnings.
      */
     public static function bulk_goone_get_modal($loid) {
         $context = context_system::instance();
@@ -211,7 +217,7 @@ class mod_goone_external extends external_api {
     }
 
     /**
-     * Describes the get_modal return value
+     * Describes the bulk_goone_get_modal return value
      * @return external_single_structure
      */
     public static function bulk_goone_get_modal_returns() {
@@ -222,7 +228,7 @@ class mod_goone_external extends external_api {
     }    
 
     /**
-     * Describes the parameters for get_modal
+     * Describes the parameters for bulk_goone_get_modal
      * @return external_function_parameters
      */
     public static function bulk_goone_get_modal_parameters() {
@@ -233,7 +239,7 @@ class mod_goone_external extends external_api {
     }
 
     /**
-     * Describes the parameters for get_modal
+     * Describes the parameters for bulk_goone_get_course_search_result
      * @return external_function_parameters
      */
     public static function bulk_goone_get_course_search_result_parameters() {
@@ -244,9 +250,10 @@ class mod_goone_external extends external_api {
     }
 
     /**
-     * Describes the parameters for get_modal
-     * @param int $loid
-     * @return external_function_parameters
+     * Finds the courses whose short name or full name holds a text, for the bulk content browser.
+     *
+     * @param string $search The text to find.
+     * @return array The courses as JSON in 'result', and the warnings.
      */
     public static function bulk_goone_get_course_search_result($search) {
         $context = context_system::instance();
@@ -260,7 +267,7 @@ class mod_goone_external extends external_api {
     }
 
     /**
-     * Describes the get_modal return value
+     * Describes the bulk_goone_get_course_search_result return value
      * @return external_single_structure
      */
     public static function bulk_goone_get_course_search_result_returns() {
@@ -272,6 +279,12 @@ class mod_goone_external extends external_api {
 
 
 
+    /**
+     * Creates one course for each selected learning object.
+     *
+     * @param string $items The IDs of the selected learning objects, separated by commas.
+     * @return array The HTML links to the courses in 'result', and the warnings.
+     */
     public static function bulk_goone_process_course_per_item($items) {
         $context = context_system::instance();
         self::validate_context($context);
@@ -303,6 +316,13 @@ class mod_goone_external extends external_api {
         ]);
     }
 
+    /**
+     * Creates one course with an activity for each selected learning object.
+     *
+     * @param string $items The IDs of the selected learning objects, separated by commas.
+     * @param string $coursename The name of the new course.
+     * @return array The HTML links to the course in 'result', and the warnings.
+     */
     public static function bulk_goone_process_course_single_course($items, $coursename) {
         $context = context_system::instance();
         self::validate_context($context);
@@ -338,6 +358,13 @@ class mod_goone_external extends external_api {
     }
 
 
+    /**
+     * Adds an activity for each selected learning object to a section of an existing course.
+     *
+     * @param string $course_section The course ID and the section number, separated by '-'.
+     * @param string $selecteditemsids The IDs of the selected learning objects, separated by commas.
+     * @return array The HTML links to the course in 'result', and the warnings.
+     */
     public static function bulk_goone_process_add_to_existing_course($course_section, $selecteditemsids) {
         $context = context_system::instance();
         self::validate_context($context);

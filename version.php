@@ -26,8 +26,8 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'mod_goone';
-$plugin->version  = 2026102801;
-$plugin->release  = 'v5.3-rc.1';
+$plugin->version  = 2026111300;
+$plugin->release  = 'v5.3';
 $plugin->requires = 2024100700; // Require Moodle 4.5
 $plugin->supported = [405, 503];
 $plugin->maturity = MATURITY_RC;

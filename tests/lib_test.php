@@ -35,7 +35,7 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot . '/mod/goone/lib.php');
 /**
- * PHPUnit data generator testcase.
+ * Unit tests for the functions in mod/goone/lib.php.
  *
  * @copyright 2020 eCreators
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -54,6 +54,14 @@ class lib_test extends advanced_testcase {
         $this->assertTrue(goone_convert_hours_mins("62") == "01:02");
         $this->assertTrue(empty(goone_convert_hours_mins("0")));
 
+    }
+
+    /**
+     * A GO1 duration can have a fraction of a minute. The function removes the fraction, and
+     * PHP 8.1 and later must not show a deprecation.
+     */
+    public function test_goone_convert_hours_mins_removes_the_fraction() {
+        $this->assertSame('01:30', goone_convert_hours_mins(90.5));
     }
 
     public function test_goone_set_completion() {
@@ -86,7 +94,7 @@ class lib_test extends advanced_testcase {
 
         $this->assertEquals('page-3', $DB->get_field('goone_completion', 'location',
             ['gooneid' => $goone->id, 'userid' => $student->id]));
-        $sstate = goone_session_state($goone->id, $cm->id);
+        $sstate = goone_session_state($goone->id);
         $this->assertEquals('page-3', $sstate->def->{6}['cmi.core.lesson_location']);
         $this->assertEquals('resume', $sstate->def->{6}['cmi.core.entry']);
     }
@@ -177,6 +185,7 @@ class lib_test extends advanced_testcase {
      * @param string $secret The webhook secret.
      * @param bool $expected Whether the signature is valid.
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('payload_signature_provider')]
     public function test_mod_goone_api_payload_signature_valid(string $request, string $header, string $secret,
             bool $expected) {
         $this->assertSame($expected, mod_goone_api_payload_signature_valid($request, $header, $secret));
@@ -209,6 +218,10 @@ class lib_test extends advanced_testcase {
         $this->assertTrue(goone_get_lang() == get_string('unknownlanguage', 'mod_goone'));
     }
 
+    public function test_goone_get_lang_spells_unknown_language() {
+        $this->assertSame('Unknown language', goone_get_lang());
+    }
+
     public function test_goone_extract_scorm_token() {
         $this->resetAfterTest();
         $loid = "9999";
@@ -222,11 +235,41 @@ class lib_test extends advanced_testcase {
 
     }
 
+    /**
+     * A SCORM package without a token gives false. PHP 8.1 and later must not show a deprecation,
+     * and PHP must not show a warning.
+     */
+    public function test_goone_extract_scorm_token_without_token_gives_false() {
+        $this->resetAfterTest();
+        $tempdir = make_temp_directory('goone/');
+        $packer = get_file_packer('application/zip');
+        $packages = [
+            'notoken1' => ['index.html' => ['<html></html>']],
+            'notoken2' => ['config.js' => ['var config = 1;']],
+            'notoken3' => ['config.js' => ['var config = {"other": "value"};']],
+        ];
+
+        foreach ($packages as $loid => $files) {
+            $filename = $loid . '.zip';
+            $packer->archive_to_pathname($files, $tempdir . $filename);
+
+            $this->assertFalse(goone_extract_scorm_token($loid, $tempdir, $filename, $tempdir . $filename), $loid);
+        }
+    }
+
 
     public function test_goone_clean_hits() {
         $data = "<strong>Course Overview</strong>";
         $result = "Course Overview ";
         $this->assertTrue(goone_clean_hits($data) == $result);
+    }
+
+    /**
+     * GO1 can send null in place of a text. The function must give an empty text, and PHP 8.1
+     * and later must not show a deprecation.
+     */
+    public function test_goone_clean_hits_accepts_null() {
+        $this->assertSame('', goone_clean_hits(null));
     }
 
     public function test_goone_inject_datamodel() {
@@ -247,7 +290,7 @@ class lib_test extends advanced_testcase {
         $mid = $DB->get_record('modules', array('name' => 'goone'), '*', MUST_EXIST);
         $cm = $DB->get_record('course_modules', array('module' => $mid->id, 'instance' => $cm->id), '*', MUST_EXIST);
         // No completion record.
-        $sstate = goone_session_state($cm->id, $cm->id);
+        $sstate = goone_session_state($cm->instance);
         $this->assertTrue($sstate->cmistate == 'normal');
     }
 
@@ -305,6 +348,31 @@ class lib_test extends advanced_testcase {
             ['coursemoduleid' => $goone->cmid, 'userid' => $student->id]));
         $this->assertEquals(COMPLETION_COMPLETE, $DB->get_field('course_modules_completion', 'completionstate',
             ['coursemoduleid' => $goone->cmid, 'userid' => $student->id]));
+    }
+
+    /**
+     * GO1 can send a learning object without an image. The function makes the course without
+     * a PHP warning.
+     */
+    public function test_bulk_mod_goone_create_course_without_image() {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = bulk_mod_goone_create_course(['id' => 4343, 'title' => 'No image', 'description' => 'Summary']);
+
+        $this->assertEquals('4343', $course->idnumber);
+    }
+
+    /**
+     * A course search without a result gives an empty list of courses, without a PHP warning.
+     */
+    public function test_bulk_mod_goone_modal_search_course_result_without_result() {
+        $this->resetAfterTest();
+
+        $result = json_decode(bulk_mod_goone_modal_search_course_result('No course has this name'), true);
+
+        $this->assertFalse($result['has_courses']);
+        $this->assertSame([], $result['courses']);
     }
 
     /**

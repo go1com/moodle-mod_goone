@@ -31,13 +31,33 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->dirroot.'/mod/goone/lib.php');
 
+/**
+ * The Client ID setting. After a change of the settings, it shows if GO1 gives a valid token.
+ *
+ * @package   mod_goone
+ * @copyright Open LMS 2021
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class admin_setting_clientid_with_token_validator extends \admin_setting_configtext {
 
+    /**
+     * Writes the setting, and records that the settings changed.
+     *
+     * @param mixed $data The submitted value.
+     * @return string An empty string, or an error message.
+     */
     public function write_setting($data) {
         set_config('configchange', 1, 'mod_goone');
         return parent::write_setting($data);
     }
 
+    /**
+     * Gives the HTML of the setting. After a change of the settings, a token test result comes first.
+     *
+     * @param mixed $data The value of the setting.
+     * @param string $query The search query of the admin page.
+     * @return string The HTML of the setting.
+     */
     public function output_html($data, $query='') {
         global $OUTPUT;
         $html = parent::output_html($data, $query);

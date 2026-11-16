@@ -38,7 +38,7 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 require_once($CFG->libdir . '/completionlib.php');
 /**
- * Class for unit testing mod_goone/activity_custom_completion.
+ * Unit tests for mod_goone\completion\custom_completion.
  *
  * @package   mod_goone
  * @copyright Copyright (c) 2021 Open LMS (https://www.openlms.net)
@@ -70,6 +70,7 @@ class activity_custom_completion_test extends advanced_testcase {
      * @param int|null $status Expected status.
      * @param string|null $exception Expected exception.
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('get_state_provider')]
     public function test_get_state(string $rule, int $available, ?bool $submitted, ?int $status, ?string $exception) {
         global $DB;
         if (!is_null($exception)) {
@@ -177,6 +178,7 @@ class activity_custom_completion_test extends advanced_testcase {
      * @param int $status
      * @param array $expected
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('get_available_custom_rules_provider')]
     public function test_get_available_custom_rules(int $status, array $expected) {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['enablecompletion' => $status]);
@@ -198,8 +200,12 @@ class activity_custom_completion_test extends advanced_testcase {
     }
 
     /**
+     * Creates a goone instance in a course.
+     *
+     * @param \stdClass $course The course.
      * @param array $params Array of parameters to pass to the generator
-     * @return \stdClass
+     * @param array $options The options for the course module.
+     * @return \stdClass The instance.
      */
     protected function create_instance($course, $params = [], $options = []) {
         $params['course'] = $course->id;

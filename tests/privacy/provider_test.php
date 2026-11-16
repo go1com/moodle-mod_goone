@@ -39,6 +39,7 @@ use core_privacy\tests\provider_testcase;
  *
  * @covers \mod_goone\privacy\provider
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_goone\privacy\provider::class)]
 final class provider_test extends provider_testcase {
 
     /** @var \stdClass A user with a GO1 user map and a log row. */
@@ -55,6 +56,13 @@ final class provider_test extends provider_testcase {
         $this->add_data((int) $this->other->id, 888);
     }
 
+    /**
+     * Add a GO1 user map and a webhook log row for a user.
+     *
+     * @param int $userid The ID of the Moodle user.
+     * @param int $gooneuserid The ID of the GO1 user.
+     * @return void
+     */
     private function add_data(int $userid, int $gooneuserid): void {
         global $DB;
         $DB->insert_record('goone_usermap', ['userid' => $userid, 'gooneuserid' => $gooneuserid, 'timecreated' => time()]);
@@ -62,6 +70,12 @@ final class provider_test extends provider_testcase {
             'userid' => $userid]);
     }
 
+    /**
+     * Count the GO1 user map rows and the webhook log rows of a user.
+     *
+     * @param int $userid The ID of the Moodle user.
+     * @return int The number of rows.
+     */
     private static function count_data(int $userid): int {
         global $DB;
         return $DB->count_records('goone_usermap', ['userid' => $userid])
