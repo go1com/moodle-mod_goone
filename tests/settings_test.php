@@ -22,6 +22,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->libdir . '/adminlib.php');
+require_once($CFG->dirroot . '/mod/goone/lib.php');
 
 /**
  * Tests for the settings page of mod_goone.
@@ -49,5 +50,58 @@ final class settings_test extends advanced_testcase {
 
         // The page holds the editable Client ID only for a user in the list.
         $this->assertTrue(isset($page->settings->mod_gooneclient_id));
+    }
+
+    /**
+     * After a save, when GO1 does not give a token, the error message links to the connection check page.
+     */
+    public function test_connection_error_after_save_links_to_the_connection_check(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        set_config('configchange', 1, 'mod_goone');
+        set_config('token_time', 0, 'mod_goone');
+        // GO1 answers without a token. The mock gives HTTP status 200, thus no request goes to GO1.
+        \curl::mock_response(json_encode(['error' => 'invalid_client']));
+
+        $page = admin_get_root(true, true)->locate('modsettinggoone');
+        $html = $page->settings->mod_gooneclient_id->output_html('');
+
+        $this->assertStringContainsString(get_string('connectionerroradmin', 'mod_goone'), $html);
+        $this->assertStringContainsString('/mod/goone/checkconnection.php', $html);
+        $this->assertStringContainsString(get_string('connectiondetails', 'mod_goone'), $html);
+    }
+
+    /**
+     * The action buttons include a link to the connection check page.
+     */
+    public function test_action_buttons_link_to_the_connection_check(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $page = admin_get_root(true, true)->locate('modsettinggoone');
+        $html = $page->settings->{'mod_goonecreatewebhook_viewwebhooklogs'}->output_html('');
+
+        $this->assertStringContainsString('/mod/goone/checkconnection.php', $html);
+        $this->assertStringContainsString(get_string('checkconnection', 'mod_goone'), $html);
+    }
+
+    /**
+     * Only an administrator in $CFG->mod_goone_admin_users, or any administrator when the list is empty,
+     * can manage the GO1 settings.
+     */
+    public function test_user_in_admin_users(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $CFG->mod_goone_admin_users = [];
+        $this->assertTrue(mod_goone_user_in_admin_users());
+
+        $CFG->mod_goone_admin_users = ['someoneelse', 'admin'];
+        $this->assertTrue(mod_goone_user_in_admin_users());
+
+        $CFG->mod_goone_admin_users = 'someoneelse';
+        $this->assertFalse(mod_goone_user_in_admin_users());
     }
 }

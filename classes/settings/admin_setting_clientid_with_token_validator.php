@@ -73,8 +73,10 @@ class admin_setting_clientid_with_token_validator extends \admin_setting_configt
             $notify = new \core\output\notification(get_string('connectionsuccess',
                 'goone'), \core\output\notification::NOTIFY_SUCCESS);
         } else {
-            $notify = new \core\output\notification(get_string('connectionerroradmin',
-                'goone'), \core\output\notification::NOTIFY_ERROR);
+            $details = \html_writer::link(new \moodle_url('/mod/goone/checkconnection.php'),
+                get_string('connectiondetails', 'goone'), ['target' => '_blank']);
+            $notify = new \core\output\notification(get_string('connectionerroradmin', 'goone') . ' ' . $details,
+                \core\output\notification::NOTIFY_ERROR);
         }
         set_config('configchange', 0, 'mod_goone');
         return \html_writer::div($OUTPUT->render($notify), 'form-item') . $html;

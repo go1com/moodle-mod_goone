@@ -39,7 +39,7 @@ if ($ADMIN->fulltree) {
     $displayoptions = resourcelib_get_displayoptions(array(RESOURCELIB_DISPLAY_OPEN, RESOURCELIB_DISPLAY_POPUP));
     $defaultdisplayoptions = array(RESOURCELIB_DISPLAY_OPEN);
     // GO1 settings are available to selected admins (in $CFG->mod_goone_admin_users), or to ALL admins.
-    if (empty($CFG->mod_goone_admin_users) || in_array($USER->username, (array) $CFG->mod_goone_admin_users)) {
+    if (mod_goone_user_in_admin_users()) {
 
 
         // The button asks the user to agree, then sends the request and shows the result on
@@ -59,6 +59,9 @@ if ($ADMIN->fulltree) {
         $migratebutton = '<br/><br/> <a class="btn btn-primary" target="_blank" href="'
             . goone_signup_url() . '" role="button">' . get_string('oauth2_login', 'mod_goone') . '</a>';
        
+        $checkconnection = '<br/><br/> ' . html_writer::link(new moodle_url('/mod/goone/checkconnection.php'),
+            get_string('checkconnection', 'mod_goone'), ['class' => 'btn btn-primary', 'target' => '_blank', 'role' => 'button']);
+
         $createitems = '<a class="btn btn-primary" target="_blank" href="'
             .$CFG->wwwroot. '/mod/goone/bulk.php" role="button">' . get_string('createitems', 'mod_goone') . '</a>';
 
@@ -69,7 +72,7 @@ if ($ADMIN->fulltree) {
 
         $name = "mod_goone/createwebhook_viewwebhooklogs";
         $settings->add(new admin_setting_heading('actionbuttons',get_string('actionbuttonsheading', 'goone'), ''));
-        $setting = new setting_statictext($name,  $createwebhook.$migratebutton.$webhooklogs);
+        $setting = new setting_statictext($name,  $createwebhook . $migratebutton . $webhooklogs . $checkconnection);
         $settings->add($setting);
 
 

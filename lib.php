@@ -78,7 +78,7 @@ function goone_download_scorm($loid) {
     $tempfile = fopen($CFG->tempdir . '/goone/' . $filename, "w+");
     // Download GO1 SCORM zip file from external API.
     $curl = new curl();
-    $serverurl = "https://api.GO1.com/v2/learning-objects/".$loid."/scorm";
+    $serverurl = "https://api.go1.com/v2/learning-objects/".$loid."/scorm";
     $header = array ("Authorization: Bearer ".get_config('mod_goone', 'token'));
     $curl->setHeader($header);
     $curlopts = array(
@@ -347,7 +347,7 @@ function goone_generatetoken() {
     );
 
     $curl = new curl();
-    $serverurl = "https://auth.GO1.com/oauth/token";
+    $serverurl = "https://auth.go1.com/oauth/token";
     $curloutput = @json_decode($curl->post($serverurl, $params), true);
     $curlinfo = $curl->get_info();
     if ($curlinfo['http_code'] == 200 && isset($curloutput['access_token'])) {
@@ -389,7 +389,7 @@ function goone_tokentest() {
     }
 
     $curl = new curl();
-    $serverurl = "https://auth.GO1.com/oauth/validate";
+    $serverurl = "https://auth.go1.com/oauth/validate";
     $header = array ("Authorization: Bearer ".get_config('mod_goone', 'token'));
     $curl->setHeader($header);
     $curl->get($serverurl);
@@ -402,6 +402,19 @@ function goone_tokentest() {
         return goone_generatetoken();
     }
 
+}
+
+/**
+ * Tells if the current user can manage the GO1 settings.
+ *
+ * When $CFG->mod_goone_admin_users holds user names, only these administrators can manage the settings.
+ * When it is empty, all administrators can. The function does not check a capability.
+ *
+ * @return bool True if the current user can manage the GO1 settings.
+ */
+function mod_goone_user_in_admin_users(): bool {
+    global $CFG, $USER;
+    return empty($CFG->mod_goone_admin_users) || in_array($USER->username, (array) $CFG->mod_goone_admin_users);
 }
 
 /**
@@ -703,7 +716,7 @@ function goone_get_hits($type, $tag, $language, $provider, $keyword, $sort, $off
     }
     $curl = new curl();
     // Appendeding to URL due to API limitations.
-    $serverurl = "https://api.GO1.com/v2/learning-objects?facets=instance,tag,language&marketplace=all&".$params;
+    $serverurl = "https://api.go1.com/v2/learning-objects?facets=instance,tag,language&marketplace=all&".$params;
     $header = array ("Authorization: Bearer ".get_config('mod_goone', 'token'));
     $curl->setHeader($header);
     $response = @json_decode($curl->get($serverurl), true);
@@ -748,7 +761,7 @@ function goone_get_facets() {
         return;
     }
     $curl = new curl();
-    $serverurl = "https://api.GO1.com/v2/learning-objects";
+    $serverurl = "https://api.go1.com/v2/learning-objects";
     $header = array ("Authorization: Bearer ".get_config('mod_goone', 'token'));
     $curl->setHeader($header);
     $params = array ('facets' => 'instance,tag,language,topics',
@@ -897,7 +910,7 @@ function goone_signup_url() {
     if (!empty($partnerid)) {
         $partnerurl = "&partner_portal_id=".$partnerid;
     }
-    $url = 'https://auth.GO1.com/oauth/authorize?client_id=Moodle&response_type=code&redirect=false&redirect_uri='
+    $url = 'https://auth.go1.com/oauth/authorize?client_id=Moodle&response_type=code&redirect=false&redirect_uri='
         .$CFG->wwwroot.'&new_client=Moodle'.$partnerurl;
     return $url;
 }

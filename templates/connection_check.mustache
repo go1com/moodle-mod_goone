@@ -1,0 +1,90 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_goone/connection_check
+
+    The result of the GO1 connection check. All values are plain text.
+
+    Context variables required for this template:
+    * passed - True if all the server host checks passed.
+    * results - The server host checks: name, passed.
+    * warnings - The warnings: text.
+    * sections - The details: title, lines (label, value), notes (text).
+
+    Example context (json):
+    {
+        "passed": false,
+        "results": [
+            {"name": "auth.go1.com: new token", "passed": false}
+        ],
+        "warnings": [
+            {"text": "GO1 did not accept the stored token."}
+        ],
+        "sections": [
+            {
+                "title": "Request a new token (POST https://auth.go1.com/oauth/token)",
+                "lines": [{"label": "HTTP status", "value": "401"}],
+                "notes": [{"text": "GO1 did not give a new token."}]
+            }
+        ]
+    }
+}}
+<div class="mod_goone-connection-check">
+    <p>{{#str}} check_intro, mod_goone {{/str}}</p>
+
+    <h3>{{#str}} check_results, mod_goone {{/str}}</h3>
+    {{#passed}}
+        <div class="alert alert-success">{{#str}} check_passed, mod_goone {{/str}}</div>
+    {{/passed}}
+    {{^passed}}
+        <div class="alert alert-danger">{{#str}} check_failedsummary, mod_goone {{/str}}</div>
+    {{/passed}}
+    <table class="table table-sm w-auto">
+        <tbody>
+        {{#results}}
+            <tr>
+                <th scope="row">{{name}}</th>
+                <td>
+                    {{#passed}}<span class="badge bg-success text-white">{{#str}} check_ok, mod_goone {{/str}}</span>{{/passed}}
+                    {{^passed}}<span class="badge bg-danger text-white">{{#str}} check_failed, mod_goone {{/str}}</span>{{/passed}}
+                </td>
+            </tr>
+        {{/results}}
+        </tbody>
+    </table>
+    {{#warnings}}
+        <div class="alert alert-warning">{{text}}</div>
+    {{/warnings}}
+
+    <h3>{{#str}} check_details, mod_goone {{/str}}</h3>
+    {{#sections}}
+        <h4 class="h5 mt-4">{{title}}</h4>
+        <table class="table table-sm">
+            <tbody>
+            {{#lines}}
+                <tr>
+                    <th scope="row" class="w-25">{{label}}</th>
+                    <td class="text-break">{{value}}</td>
+                </tr>
+            {{/lines}}
+            </tbody>
+        </table>
+        {{#notes}}
+            <div class="alert alert-info">{{text}}</div>
+        {{/notes}}
+    {{/sections}}
+</div>

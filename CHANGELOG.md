@@ -2,7 +2,23 @@
 
 All notable changes to the GO1 activity module (mod_goone) are in this file.
 
-## [5.3-rc.0] - 2026-10-28
+## [Unreleased]
+
+### Added
+
+- The "Check connection" button on the settings page. It opens a page that sends read-only requests to the GO1 hosts that the plugin uses: auth.go1.com, api.go1.com, gateway.go1.com and api.go1.co. For each request, the page shows the HTTP status, the curl error and the GO1 response. It also shows the Moodle HTTP settings and the DNS results that can stop the requests. It does not show the client secret, the tokens or other secrets.
+- The CLI script `cli/check_connection.php`. It runs the same checks as the "Check connection" page.
+
+### Changed
+
+- When GO1 does not give a token after the settings are saved, the error message has a "Details" link to the "Check connection" page.
+- The plugin uses lowercase GO1 host names, for example auth.go1.com.
+
+### Fixed
+
+- The content browsers showed "Connection error, please refresh the page again." when they could not connect to GO1, because the language file defined this string two times. The message now tells the user to refresh the page, and to notify the site administrator if the problem continues.
+
+## [5.3] - 2026-10-28
 
 Changes since the release MOODLE403_2024040500.
 
